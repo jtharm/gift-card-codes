@@ -3,13 +3,17 @@ const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { CloudantV1 } = require('@ibm-cloud/cloudant');
+const { IamAuthenticator } = require('ibm-cloud-sdk-core');
 
 const app = express();
 app.use(express.json());
 
 // Cloudant client
-const cloudant = CloudantV1.newInstance({
-  authenticator: new CloudantV1.IamAuthenticator({ apikey: process.env.CLOUDANT_APIKEY })
+const cloudant = new CloudantV1({
+  authenticator: new IamAuthenticator({
+    apikey: process.env.CLOUDANT_APIKEY
+  }),
+  serviceUrl: process.env.CLOUDANT_URL
 });
 cloudant.setServiceUrl(process.env.CLOUDANT_URL);
 
