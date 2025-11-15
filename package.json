@@ -9,7 +9,7 @@
     "express": "^4.18.2",
     "axios": "^1.7.2",
     "jsonwebtoken": "^9.0.0",
-    "@ibm-cloud/cloudant": "^4.3.0",
+    "@ibm-cloud/cloudant": "^0.12.11",
     "dotenv": "^16.3.1"
   }
 }
