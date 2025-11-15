@@ -1,15 +1,15 @@
 {
   "name": "gift-card-codes",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.7.2",
-    "jsonwebtoken": "^9.0.0",
     "@ibm-cloud/cloudant": "^0.12.11",
-    "dotenv": "^16.3.1"
+    "express": "^4.18.2",
+    "ibmcloud-appid": "^7.0.2",
+    "passport": "^0.7.0",
+    "express-session": "^1.17.3"
   }
 }

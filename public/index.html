@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Get Your Code</title>
+</head>
+<body>
+  <h1>Welcome!</h1>
+
+  <button onclick="getCode()">Get My Code</button>
+
+  <p id="output"></p>
+
+  <script>
+    async function getCode() {
+      const resp = await fetch("/get-code");
+      const data = await resp.json();
+
+      document.getElementById("output").innerText =
+        data.code || data.error || "Unknown error";
+    }
+  </script>
+</body>
+</html>

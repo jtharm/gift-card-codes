@@ -1,78 +1,97 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const jwt = require('jsonwebtoken');
-const { CloudantV1 } = require('@ibm-cloud/cloudant');
-const { IamAuthenticator } = require('ibm-cloud-sdk-core');
+import express from "express";
+import path from "path";
+import session from "express-session";
+import passport from "passport";
+import { WebAppStrategy } from "ibmcloud-appid";
+import { CloudantV1, IamAuthenticator } from "@ibm-cloud/cloudant";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
-// Cloudant client
-const cloudant = new CloudantV1({
+// ---------------------- SESSION ----------------------
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "change-this",
+    resave: false,
+    saveUninitialized: false
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ---------------------- APP ID STRATEGY ----------------------
+passport.use(
+  new WebAppStrategy({
+    tenantId: process.env.APPID_TENANT_ID,
+    clientId: process.env.APPID_CLIENT_ID,
+    secret: process.env.APPID_SECRET,
+    oauthServerUrl: process.env.APPID_OAUTH_URL,
+    redirectUri: process.env.APPID_REDIRECT_URI
+  })
+);
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
+
+// Authentication middleware
+function requiresLogin(req, res, next) {
+  if (req.user) return next();
+  res.redirect("/login");
+}
+
+// ---------------------- LOGIN ROUTES ----------------------
+app.get("/login", passport.authenticate(WebAppStrategy.STRATEGY_NAME));
+
+app.get(
+  "/callback",
+  passport.authenticate(WebAppStrategy.STRATEGY_NAME),
+  (req, res) => res.redirect("/")
+);
+
+// ---------------------- CLOUDANT CLIENT ----------------------
+const cloudant = CloudantV1.newInstance({
   authenticator: new IamAuthenticator({
     apikey: process.env.CLOUDANT_APIKEY
   }),
   serviceUrl: process.env.CLOUDANT_URL
 });
-cloudant.setServiceUrl(process.env.CLOUDANT_URL);
 
-const DB_NAME = process.env.DB_NAME;
+// ---------------------- UI ROUTE ----------------------
+app.use(express.static("public"));
 
-// --- Fetch JWKS for App ID token verification ---
-let jwksCache = null;
-async function getJwks() {
-  if (!jwksCache) {
-    const res = await axios.get(process.env.APPID_JWKS_URL);
-    jwksCache = res.data.keys;
-  }
-  return jwksCache;
-}
+app.get("/", requiresLogin, (req, res) => {
+  res.sendFile(path.resolve("public/index.html"));
+});
 
-function getKey(header, keys) {
-  return keys.find(k => k.kid === header.kid);
-}
-
-// --- Verify App ID JWT ---
-async function verifyToken(token) {
-  const keys = await getJwks();
-  const decodedHeader = jwt.decode(token, { complete: true }).header;
-  const jwk = getKey(decodedHeader, keys);
-  if (!jwk) throw new Error('Key not found');
-
-  // Convert JWK to PEM
-  const { e, n } = jwk;
-  const pem = require('jwk-to-pem')({ kty: 'RSA', n, e });
-
-  return jwt.verify(token, pem, { algorithms: ['RS256'] });
-}
-
-// --- Get next code endpoint ---
-app.post('/get-code', async (req, res) => {
+// ---------------------- API ROUTES ----------------------
+app.get("/get-code", requiresLogin, async (req, res) => {
   try {
-    const auth = req.headers.authorization;
-    if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing token' });
+    const result = await cloudant.postAllDocs({
+      db: process.env.CLOUDANT_DB,
+      includeDocs: true,
+      limit: 1
+    });
 
-    const token = auth.split(' ')[1];
-    await verifyToken(token);
+    if (result.result.rows.length === 0) {
+      return res.status(400).json({ error: "No codes left" });
+    }
 
-    // Fetch codes doc
-    const { result: doc } = await cloudant.getDocument({ db: DB_NAME, docId: 'codes' });
+    const doc = result.result.rows[0].doc;
 
-    if (doc.nextIndex >= doc.list.length) return res.status(400).json({ error: 'No codes left' });
+    await cloudant.deleteDocument({
+      db: process.env.CLOUDANT_DB,
+      docId: doc._id,
+      rev: doc._rev
+    });
 
-    const code = doc.list[doc.nextIndex];
-    doc.nextIndex += 1;
-
-    await cloudant.putDocument({ db: DB_NAME, docId: 'codes', document: doc });
-
-    res.json({ code });
+    res.json({ code: doc.code });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to get code' });
+    res.status(500).json({ error: "Error fetching code" });
   }
 });
 
-// --- Start server ---
-const port = process.env.PORT || 10000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
