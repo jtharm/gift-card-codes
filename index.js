@@ -221,6 +221,7 @@ app.get("/admin/session", (req, res) => {
 
 app.post("/admin/add-codes", requireAdmin, async (req, res) => {
   const { docId, codes } = req.body;
+
   if (!docId || !Array.isArray(codes) || codes.length === 0) {
     return res.status(400).json({ error: "Invalid request" });
   }
@@ -231,14 +232,32 @@ app.post("/admin/add-codes", requireAdmin, async (req, res) => {
 
     if (!Array.isArray(doc.codes)) doc.codes = [];
 
+    const existingCodes = new Set(doc.codes.map(c => c.code.toLowerCase()));
+    const added = [];
+    const skipped = [];
+
     codes.forEach(code => {
-      doc.codes.push({ code, used: false });
+      const normalized = code.toLowerCase();
+      if (existingCodes.has(normalized)) {
+        skipped.push(code);
+      } else {
+        doc.codes.push({ code, used: false });
+        added.push(code);
+        existingCodes.add(normalized);
+      }
     });
 
     await client.putDocument({ db: DB_NAME, docId, document: doc });
 
-    console.log(`[${new Date().toISOString()}] Added ${codes.length} codes to ${docId} by admin ${req.session.adminEmail}`);
-    return res.json({ message: `Added ${codes.length} codes to ${docId}` });
+    console.log(`[${new Date().toISOString()}] Admin ${req.session.adminEmail} added ${added.length} codes to ${docId}, skipped ${skipped.length}`);
+
+    return res.json({
+      message: `Successfully added ${added.length} codes.`,
+      added,
+      skipped,
+      skippedCount: skipped.length
+    });
+
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Error adding codes:`, err);
     return res.status(500).json({ error: "Error adding codes" });

@@ -168,7 +168,11 @@ document.getElementById("add-codes-btn").addEventListener("click", async () => {
 
     const data = await res.json();
     if (res.ok) {
-      status.textContent = `Successfully added ${codesArray.length} codes to ${docId}.`;
+      let msg = `Successfully added ${data.added.length} codes.`;
+      if (data.skippedCount > 0) {
+        msg += ` Skipped ${data.skippedCount} duplicates:\n${data.skipped.join(", ")}`;
+      }
+      status.textContent = msg;
       document.getElementById("new-codes").value = "";
     } else {
       status.textContent = data.error || "Error adding codes.";
