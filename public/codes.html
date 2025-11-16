@@ -226,8 +226,10 @@ getCodesBtn.addEventListener("click", async () => {
 
     div.innerHTML = `
       <p><strong>Transaction ID:</strong> ${data.txnId}</p>
-      <p><strong>Codes:</strong><br>${data.codes.join("<br>")}</p>
+      <p><strong>Codes:</strong><br><br>${data.codes.join("<br>")}</p>
       <p><strong>Total due:</strong> $${data.total}</p>
+      <p>Please make e-transfer payment to <strong>jeeva86@hotmail.com</strong></p>
+
     `;
   } catch (err) {
     console.error(err);
@@ -258,7 +260,7 @@ document.getElementById("retrieve-btn").addEventListener("click", async () => {
     }
 
     div.innerHTML = `
-      <strong>Codes:</strong><br>
+      <strong>Codes:</strong><br><br>
       ${data.codes.join("<br>")}
     `;
   } catch (err) {
