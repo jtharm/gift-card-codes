@@ -219,6 +219,32 @@ app.get("/admin/session", (req, res) => {
   res.status(401).send("Unauthorized");
 });
 
+app.post("/admin/add-codes", requireAdmin, async (req, res) => {
+  const { docId, codes } = req.body;
+  if (!docId || !Array.isArray(codes) || codes.length === 0) {
+    return res.status(400).json({ error: "Invalid request" });
+  }
+
+  try {
+    const response = await client.getDocument({ db: DB_NAME, docId });
+    const doc = response.result;
+
+    if (!Array.isArray(doc.codes)) doc.codes = [];
+
+    codes.forEach(code => {
+      doc.codes.push({ code, used: false });
+    });
+
+    await client.putDocument({ db: DB_NAME, docId, document: doc });
+
+    console.log(`[${new Date().toISOString()}] Added ${codes.length} codes to ${docId} by admin ${req.session.adminEmail}`);
+    return res.json({ message: `Added ${codes.length} codes to ${docId}` });
+  } catch (err) {
+    console.error(`[${new Date().toISOString()}] Error adding codes:`, err);
+    return res.status(500).json({ error: "Error adding codes" });
+  }
+});
+
 // Admin reset codes
 app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   try {
