@@ -56,6 +56,25 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/login.html"));
 });
 
+document.getElementById("admin-login-form").addEventListener("submit", async (e) => {
+  e.preventDefault(); // prevent page reload
+  const email = document.getElementById("admin-email-input").value.trim();
+  const password = document.getElementById("admin-password-input").value.trim();
+
+  try {
+    const res = await fetch("/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (res.ok) window.location.href = "/admin.html";
+    else document.getElementById("error-message").textContent = "Invalid credentials";
+  } catch {
+    document.getElementById("error-message").textContent = "Server error";
+  }
+});
+
 app.post("/admin/login", (req, res) => {
   const { email, password } = req.body;
 

@@ -62,13 +62,12 @@
 
 <div class="container">
   <h1>Admin Login</h1>
-
-  <input type="email" id="email" placeholder="Email" autocomplete="email" />
-  <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
-
-  <button id="login-btn">Login</button>
-
-  <div id="error"></div>
+    <form id="admin-login-form">
+    <input type="email" id="admin-email-input" placeholder="Admin Email" required>
+    <input type="password" id="admin-password-input" placeholder="Password" required>
+    <button type="submit">Login</button>
+    </form>
+    <div id="error-message"></div>
 </div>
 
 <script>
