@@ -1,211 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gift Card Codes</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
-      background: #f5f5f5;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gift Card Codes</title>
 
-    .container {
-      max-width: 400px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f5f7;
+    margin: 0;
+    padding: 0;
+  }
 
-    h2 {
-      text-align: center;
-      margin-top: 50px; /* leave space for logout button */
-      margin-bottom: 20px;
-    }
+  /* Topbar like admin.html */
+  .topbar {
+    background: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 
-    label {
-      display: block;
-      margin: 8px 0;
-      font-weight: bold;
-    }
+  .topbar span {
+    font-size: 18px;
+    font-weight: 600;
+  }
 
-    input[type="text"], select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      box-sizing: border-box;
-      font-size: 1rem;
-    }
+  .logout-btn {
+    padding: 10px 14px;
+    background: #ff3b30;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+  }
 
-    button {
-      width: 100%;
-      padding: 10px;
-      font-size: 1rem;
-      margin-top: 10px;
-      cursor: pointer;
-    }
+  .container {
+    max-width: 500px;
+    margin: 25px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
 
-    .section {
-      padding: 15px;
-      border-radius: 8px;
-      background: #fff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+  h2 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
 
-    .success { color: green; margin-top: 10px; }
-    .error { color: red; margin-top: 10px; }
+  label {
+    display: block;
+    margin: 8px 0;
+    font-weight: 500;
+  }
 
-    #logout-btn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      padding: 8px 12px;
-      font-size: 0.9rem;
-      z-index: 1000;
-    }
+  input[type="text"], select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
 
-    @media (max-width: 480px) {
-      body { padding: 10px; }
-      button, select, input[type="text"] { font-size: 0.95rem; padding: 8px; }
-      h2 { margin-top: 60px; font-size: 1.2rem; }
-    }
-  </style>
+  button.action-btn {
+    width: 100%;
+    padding: 14px;
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  button.action-btn:active {
+    background: #005fcc;
+  }
+
+  #codes-result, #retrieved-codes {
+    font-size: 0.95rem;
+    word-break: break-word;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 480px) {
+    .container { margin: 15px; padding: 20px; }
+    button.action-btn { font-size: 15px; padding: 12px; }
+    input[type="text"], select { font-size: 0.95rem; padding: 8px; }
+  }
+</style>
 </head>
 <body>
-  <form id="logout-form" method="POST" action="/logout" style="display:inline;">
-    <button type="submit" id="logout-btn">Logout</button>
-  </form>
 
-  <div class="container">
-    <h2>Welcome, <span id="userEmail"></span></h2>
+<div class="topbar">
+  <span id="userEmail">User</span>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
 
-    <!-- Mode selection -->
-    <div class="section">
-      <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
-      <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
-    </div>
+<div class="container">
+  <h2>Gift Card Codes</h2>
 
-    <!-- Purchase codes -->
-    <div id="purchase-section" class="section" style="display:none;">
-      <label><input type="radio" name="service" value="Uber"> Uber</label>
-      <label><input type="radio" name="service" value="DoorDash"> DoorDash</label>
-
-      <label>Quantity:
-        <select id="quantity"></select>
-      </label>
-
-      <button id="get-codes-btn" disabled>Get Codes</button><br><br>
-      <div id="codes-result"></div>
-    </div>
-
-    <!-- Retrieve codes -->
-    <div id="retrieve-section" class="section" style="display:none;">
-      <label>Transaction ID:
-        <input type="text" id="txn-id">
-      </label>
-      <button id="retrieve-btn">Retrieve</button>
-      <div id="retrieved-codes"></div>
-    </div>
+  <!-- Mode selection -->
+  <div class="section">
+    <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
+    <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
   </div>
 
-  <script>
-    async function loadUserEmail() {
-      const res = await fetch("/session-info");
-      if (!res.ok) return window.location = "/";
+  <!-- Purchase codes -->
+  <div id="purchase-section" class="section" style="display:none;">
+    <label><input type="radio" name="service" value="Uber"> Uber</label>
+    <label><input type="radio" name="service" value="DoorDash"> DoorDash</label>
+
+    <label>Quantity:
+      <select id="quantity"></select>
+    </label>
+
+    <button class="action-btn" id="get-codes-btn" disabled>Get Codes</button>
+    <div id="codes-result"></div>
+  </div>
+
+  <!-- Retrieve codes -->
+  <div id="retrieve-section" class="section" style="display:none;">
+    <label>Transaction ID:
+      <input type="text" id="txn-id">
+    </label>
+    <button class="action-btn" id="retrieve-btn">Retrieve</button>
+    <div id="retrieved-codes"></div>
+  </div>
+</div>
+
+<script>
+async function loadUserEmail() {
+  const res = await fetch("/session-info");
+  if (!res.ok) return window.location = "/";
+  const data = await res.json();
+  window.USER_EMAIL = data.email;
+  document.getElementById("userEmail").textContent = data.email;
+}
+loadUserEmail();
+
+// Logout
+async function logout() {
+  await fetch("/logout", { method: "POST" });
+  window.location.href = "/";
+}
+
+// Mode toggle
+const modeRadios = document.querySelectorAll('input[name="mode"]');
+const purchaseSection = document.getElementById("purchase-section");
+const retrieveSection = document.getElementById("retrieve-section");
+
+modeRadios.forEach(radio => {
+  radio.addEventListener("change", () => {
+    purchaseSection.style.display = radio.value === "purchase" ? "block" : "none";
+    retrieveSection.style.display = radio.value === "retrieve" ? "block" : "none";
+  });
+});
+
+// Purchase codes
+const getCodesBtn = document.getElementById("get-codes-btn");
+const quantitySelect = document.getElementById("quantity");
+let selectedService = null;
+let availableLoaded = false;
+
+document.getElementsByName("service").forEach(r => {
+  r.addEventListener("change", async () => {
+    selectedService = r.value;
+    availableLoaded = false;
+    updateButtonState();
+    quantitySelect.innerHTML = "";
+    try {
+      const res = await fetch(`/available?service=${selectedService}`);
       const data = await res.json();
-      window.USER_EMAIL = data.email;
-      document.getElementById("userEmail").textContent = data.email;
-    }
-    loadUserEmail();
-
-    const modeRadios = document.querySelectorAll('input[name="mode"]');
-    const purchaseSection = document.getElementById("purchase-section");
-    const retrieveSection = document.getElementById("retrieve-section");
-
-    modeRadios.forEach(radio => {
-      radio.addEventListener("change", () => {
-        purchaseSection.style.display = radio.value === "purchase" ? "block" : "none";
-        retrieveSection.style.display = radio.value === "retrieve" ? "block" : "none";
-      });
-    });
-
-    // Purchase codes
-    const getCodesBtn = document.getElementById("get-codes-btn");
-    const quantitySelect = document.getElementById("quantity");
-    let selectedService = null;
-    let availableLoaded = false;
-
-    document.getElementsByName("service").forEach(r => {
-      r.addEventListener("change", async () => {
-        selectedService = r.value;
-        availableLoaded = false;
-        updateButtonState();
-        quantitySelect.innerHTML = "";
-        try {
-          const res = await fetch(`/available?service=${selectedService}`);
-          const data = await res.json();
-          const available = data.available;
-          const maxQty = Math.min(available, 4);
-          for (let i = 1; i <= maxQty; i++) {
-            const option = document.createElement("option");
-            option.value = i;
-            option.textContent = i;
-            quantitySelect.appendChild(option);
-          }
-          availableLoaded = true;
-          updateButtonState();
-        } catch {
-          availableLoaded = false;
-          updateButtonState();
-        }
-      });
-    });
-
-    function updateButtonState() {
-      getCodesBtn.disabled = !selectedService || !availableLoaded;
-    }
-
-    getCodesBtn.addEventListener("click", async () => {
-      const qty = parseInt(quantitySelect.value, 10);
-      const div = document.getElementById("codes-result");
-      div.textContent = "Loading...";
-      try {
-        const res = await fetch("/get-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ service: selectedService, quantity: qty })
-        });
-        const data = await res.json();
-        if (data.error) div.textContent = data.error;
-        else div.innerHTML = `${data.codes.join("<br>")}<br><br>Transaction ID: <strong>${data.txnId}</strong>`;
-      } catch {
-        div.textContent = "Unknown error";
+      const available = data.available;
+      const maxQty = Math.min(available, 4);
+      for (let i = 1; i <= maxQty; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = i;
+        quantitySelect.appendChild(option);
       }
-    });
+      availableLoaded = true;
+      updateButtonState();
+    } catch {
+      availableLoaded = false;
+      updateButtonState();
+    }
+  });
+});
 
-    // Retrieve codes
-    document.getElementById("retrieve-btn").addEventListener("click", async () => {
-      const txnId = document.getElementById("txn-id").value.trim();
-      const div = document.getElementById("retrieved-codes");
-      div.innerHTML = "";
-      if (!txnId) return alert("Please enter a transaction ID");
-      try {
-        const res = await fetch("/retrieve-codes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txnId })
-        });
-        const data = await res.json();
-        if (data.error) div.textContent = data.error;
-        else div.innerHTML = data.codes.join("<br>");
-      } catch {
-        div.textContent = "Unknown error";
-      }
+function updateButtonState() {
+  getCodesBtn.disabled = !selectedService || !availableLoaded;
+}
+
+getCodesBtn.addEventListener("click", async () => {
+  const qty = parseInt(quantitySelect.value, 10);
+  const div = document.getElementById("codes-result");
+  div.textContent = "Loading...";
+  try {
+    const res = await fetch("/get-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ service: selectedService, quantity: qty })
     });
-  </script>
+    const data = await res.json();
+    if (data.error) div.textContent = data.error;
+    else div.innerHTML = `${data.codes.join("<br>")}<br><br>Transaction ID: <strong>${data.txnId}</strong>`;
+  } catch {
+    div.textContent = "Unknown error";
+  }
+});
+
+// Retrieve codes
+document.getElementById("retrieve-btn").addEventListener("click", async () => {
+  const txnId = document.getElementById("txn-id").value.trim();
+  const div = document.getElementById("retrieved-codes");
+  div.innerHTML = "";
+  if (!txnId) return alert("Please enter a transaction ID");
+  try {
+    const res = await fetch("/retrieve-codes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ txnId })
+    });
+    const data = await res.json();
+    if (data.error) div.textContent = data.error;
+    else div.innerHTML = data.codes.join("<br>");
+  } catch {
+    div.textContent = "Unknown error";
+  }
+});
+</script>
 </body>
 </html>
