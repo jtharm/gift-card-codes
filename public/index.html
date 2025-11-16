@@ -1,23 +1,124 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Get Your Code</title>
+  <meta charset="UTF-8">
+  <title>Get Codes</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
 </head>
 <body>
-  <h1>Welcome!</h1>
+  <h1>Get Your Codes</h1>
 
-  <button onclick="getCode()">Get My Code</button>
+  <input id="email" type="email" placeholder="Enter your email" />
 
-  <p id="output"></p>
+  <p>Select a service:</p>
+  <label><input type="radio" name="service" value="Uber" /> Uber</label>
+  <label><input type="radio" name="service" value="DoorDash" /> DoorDash</label>
+
+  <p>Select quantity:</p>
+  <select id="quantity">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+  </select>
+
+  <p id="available" style="font-weight:bold;"></p>
+
+  <br/>
+  <button id="getCodeBtn">Get Codes</button>
+
+  <div id="result" style="margin-top:20px; font-weight:bold;"></div>
 
   <script>
-    async function getCode() {
-      const resp = await fetch("/get-code");
-      const data = await resp.json();
+  const btn = document.getElementById("getCodeBtn");
+  const resultDiv = document.getElementById("result");
+  const availableDiv = document.getElementById("available");
+  const emailInput = document.getElementById("email");
+  const quantitySelect = document.getElementById("quantity");
+  const serviceRadios = document.querySelectorAll('input[name="service"]');
 
-      document.getElementById("output").innerText =
-        data.code || data.error || "Unknown error";
+  let availableLoaded = false;
+  let selectedService = null;
+
+  // Initially disable the button
+  btn.disabled = true;
+
+  // Function to update button state
+  function updateButtonState() {
+    btn.disabled = !emailInput.value.trim() || !availableLoaded;
+  }
+
+  // Update available quantity when radio button changes
+  serviceRadios.forEach(radio => {
+    radio.addEventListener("change", async () => {
+      selectedService = radio.value;
+      availableLoaded = false;
+      updateButtonState();
+      availableDiv.textContent = "Loading...";
+      try {
+        const res = await fetch(`/available?service=${selectedService}`);
+        const data = await res.json();
+        availableDiv.textContent = `Available ${selectedService} codes: ${data.available}`;
+        availableLoaded = true;
+        updateButtonState();
+      } catch {
+        availableDiv.textContent = "";
+        availableLoaded = false;
+        updateButtonState();
+      }
+    });
+  });
+
+  // Enable/disable button on email input
+  emailInput.addEventListener("input", updateButtonState);
+
+  btn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const quantity = parseInt(quantitySelect.value, 10);
+
+    resultDiv.textContent = '';
+    resultDiv.className = '';
+
+    if (!selectedService) {
+      resultDiv.textContent = "Please select a service (Uber or DoorDash)";
+      resultDiv.className = "error";
+      return;
     }
+
+    resultDiv.textContent = "Loading...";
+
+    try {
+      const res = await fetch("/get-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, service: selectedService, quantity })
+      });
+
+      const data = await res.json();
+
+      if (data.codes) {
+        resultDiv.innerHTML = `Your ${selectedService} codes:<br>${data.codes.join("<br>")}`;
+        resultDiv.className = "success";
+      } else {
+        resultDiv.textContent = data.error || "Unknown error";
+        resultDiv.className = "error";
+      }
+
+      // Update available quantity after request
+      const availRes = await fetch(`/available?service=${selectedService}`);
+      const availData = await availRes.json();
+      availableDiv.textContent = `Available ${selectedService} codes: ${availData.available}`;
+    } catch (err) {
+      console.error(err);
+      resultDiv.textContent = "Error fetching codes";
+      resultDiv.className = "error";
+    }
+  });
   </script>
+
 </body>
 </html>

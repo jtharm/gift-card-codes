@@ -1,97 +1,100 @@
-import express from "express";
-import path from "path";
-import session from "express-session";
-import passport from "passport";
-import { WebAppStrategy } from "ibmcloud-appid";
-import { CloudantV1, IamAuthenticator } from "@ibm-cloud/cloudant";
-import dotenv from "dotenv";
-dotenv.config();
+require("dotenv").config();
+const express = require("express");
+const session = require("express-session");
+const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// ---------------------- SESSION ----------------------
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "change-this",
-    resave: false,
-    saveUninitialized: false
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// ---------------------- APP ID STRATEGY ----------------------
-passport.use(
-  new WebAppStrategy({
-    tenantId: process.env.APPID_TENANT_ID,
-    clientId: process.env.APPID_CLIENT_ID,
-    secret: process.env.APPID_SECRET,
-    oauthServerUrl: process.env.APPID_OAUTH_URL,
-    redirectUri: process.env.APPID_REDIRECT_URI
-  })
-);
-
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user, done) => done(null, user));
-
-// Authentication middleware
-function requiresLogin(req, res, next) {
-  if (req.user) return next();
-  res.redirect("/login");
-}
-
-// ---------------------- LOGIN ROUTES ----------------------
-app.get("/login", passport.authenticate(WebAppStrategy.STRATEGY_NAME));
-
-app.get(
-  "/callback",
-  passport.authenticate(WebAppStrategy.STRATEGY_NAME),
-  (req, res) => res.redirect("/")
-);
-
-// ---------------------- CLOUDANT CLIENT ----------------------
-const cloudant = CloudantV1.newInstance({
-  authenticator: new IamAuthenticator({
-    apikey: process.env.CLOUDANT_APIKEY
-  }),
-  serviceUrl: process.env.CLOUDANT_URL
-});
-
-// ---------------------- UI ROUTE ----------------------
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-app.get("/", requiresLogin, (req, res) => {
-  res.sendFile(path.resolve("public/index.html"));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "changeme",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+const client = CloudantV1.newInstance({
+  authenticator: new IamAuthenticator({
+    apikey: process.env.CLOUDANT_APIKEY,
+  }),
+  serviceUrl: process.env.CLOUDANT_URL,
 });
 
-// ---------------------- API ROUTES ----------------------
-app.get("/get-code", requiresLogin, async (req, res) => {
-  try {
-    const result = await cloudant.postAllDocs({
-      db: process.env.CLOUDANT_DB,
-      includeDocs: true,
-      limit: 1
-    });
+const DB_NAME = process.env.CLOUDANT_DB;
 
-    if (result.result.rows.length === 0) {
-      return res.status(400).json({ error: "No codes left" });
+// -----------------------------------
+// GET CODE ROUTE with email authorization
+// -----------------------------------
+app.post("/get-code", async (req, res) => {
+  const { email, service, quantity } = req.body;
+  const qty = parseInt(quantity, 10) || 1;
+
+  if (!email) return res.status(400).json({ error: "Email required" });
+  if (!service || !["Uber", "DoorDash"].includes(service))
+    return res.status(400).json({ error: "Please select Uber or DoorDash" });
+  if (qty < 1 || qty > 4)
+    return res.status(400).json({ error: "Quantity must be between 1 and 4" });
+
+  try {
+    // Check if email is authorized
+    const usersResponse = await client.getDocument({
+      db: DB_NAME,
+      docId: "authorized_users",
+    });
+    const usersDoc = usersResponse.result;
+
+    if (!usersDoc.emails.includes(email.toLowerCase()))
+      return res.status(403).json({ error: "Not authorized" });
+
+    // Choose codes document
+    const docId = service === "Uber" ? "codes-uber" : "codes-doordash";
+    const codesResponse = await client.getDocument({ db: DB_NAME, docId });
+    const codesDoc = codesResponse.result;
+
+    const unusedCodes = codesDoc.codes.filter(c => !c.used);
+
+    if (unusedCodes.length < qty) {
+      return res.status(400).json({ error: `Requested quantity exceeds available codes (${unusedCodes.length} left)` });
     }
 
-    const doc = result.result.rows[0].doc;
-
-    await cloudant.deleteDocument({
-      db: process.env.CLOUDANT_DB,
-      docId: doc._id,
-      rev: doc._rev
+    // Take the requested number of codes
+    const selected = unusedCodes.slice(0, qty);
+    selected.forEach(c => {
+      c.used = true;
+      c.usedBy = email.toLowerCase();
+      c.usedAt = new Date().toISOString();
     });
 
-    res.json({ code: doc.code });
+    // Save updated codes document
+    await client.putDocument({ db: DB_NAME, docId, document: codesDoc });
+
+    return res.json({ codes: selected.map(c => c.code) });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error fetching code" });
+    console.error("Error retrieving codes:", err);
+    return res.status(500).json({ error: "Unknown error" });
   }
 });
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+// Endpoint to get available quantity
+app.get("/available", async (req, res) => {
+  const { service } = req.query;
+  if (!service || !["Uber", "DoorDash"].includes(service))
+    return res.status(400).json({ error: "Invalid service" });
+
+  try {
+    const docId = service === "Uber" ? "codes-uber" : "codes-doordash";
+    const codesResponse = await client.getDocument({ db: DB_NAME, docId });
+    const codesDoc = codesResponse.result;
+    const available = codesDoc.codes.filter(c => !c.used).length;
+    return res.json({ available });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ available: 0 });
+  }
+});
+
+app.listen(3000, () => console.log("Server running on port 3000"));
