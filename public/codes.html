@@ -215,7 +215,12 @@ getCodesBtn.addEventListener("click", async () => {
     });
     const data = await res.json();
     if (data.error) div.textContent = data.error;
-    else div.innerHTML = `${data.codes.join("<br>")}<br><br>Transaction ID: <strong>${data.txnId}</strong>`;
+    else resultDiv.innerHTML = `
+      <p><strong>Transaction ID:</strong> ${data.txnId}</p>
+      <p><strong>Codes:</strong><br>${data.codes.join("<br>")}</p>
+      <p><strong>Total due:</strong> $${data.total}</p>
+    `;
+
   } catch {
     div.textContent = "Unknown error";
   }

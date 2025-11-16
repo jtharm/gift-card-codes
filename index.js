@@ -187,7 +187,14 @@ app.post("/get-code", async (req, res) => {
 
     log(`Transaction ${txnId} - ${email} requested ${qty} ${service} code(s)`);
 
-    return res.json({ codes: selected.map(c => c.code), txnId });
+    const total = selected.length * 40;
+
+    return res.json({
+      codes: selected.map(c => c.code),
+      txnId,
+      count: selected.length,
+      total
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Unknown error" });
