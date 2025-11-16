@@ -13,7 +13,6 @@
     padding: 0;
   }
 
-  /* Topbar like admin.html */
   .topbar {
     background: white;
     padding: 15px;
@@ -83,8 +82,19 @@
     cursor: pointer;
   }
 
+  button.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   button.action-btn:active {
     background: #005fcc;
+  }
+
+  .section {
+    border-radius: 12px;
+    padding: 15px;
+    background: #f9f9f9;
   }
 
   #codes-result, #retrieved-codes {
@@ -132,20 +142,23 @@
   <!-- Retrieve codes -->
   <div id="retrieve-section" class="section" style="display:none;">
     <label>Transaction ID:
-      <input type="text" id="txn-id">
+      <input type="text" id="txn-id" placeholder="Enter transaction ID">
     </label>
-    <button class="action-btn" id="retrieve-btn">Retrieve</button>
+    <button class="action-btn" id="retrieve-btn">Retrieve Codes</button>
     <div id="retrieved-codes"></div>
   </div>
 </div>
 
 <script>
+let USER_EMAIL = null;
+
+// Load user session info
 async function loadUserEmail() {
   const res = await fetch("/session-info");
   if (!res.ok) return window.location = "/";
   const data = await res.json();
-  window.USER_EMAIL = data.email;
-  document.getElementById("userEmail").textContent = data.email;
+  USER_EMAIL = data.email;
+  document.getElementById("userEmail").textContent = USER_EMAIL;
 }
 loadUserEmail();
 
@@ -171,13 +184,11 @@ modeRadios.forEach(radio => {
 const getCodesBtn = document.getElementById("get-codes-btn");
 const quantitySelect = document.getElementById("quantity");
 let selectedService = null;
-let availableLoaded = false;
 
 document.getElementsByName("service").forEach(r => {
   r.addEventListener("change", async () => {
     selectedService = r.value;
-    availableLoaded = false;
-    updateButtonState();
+    getCodesBtn.disabled = true;
     quantitySelect.innerHTML = "";
     try {
       const res = await fetch(`/available?service=${selectedService}`);
@@ -190,23 +201,17 @@ document.getElementsByName("service").forEach(r => {
         option.textContent = i;
         quantitySelect.appendChild(option);
       }
-      availableLoaded = true;
-      updateButtonState();
+      getCodesBtn.disabled = maxQty === 0;
     } catch {
-      availableLoaded = false;
-      updateButtonState();
+      getCodesBtn.disabled = true;
     }
   });
 });
 
-function updateButtonState() {
-  getCodesBtn.disabled = !selectedService || !availableLoaded;
-}
-
 getCodesBtn.addEventListener("click", async () => {
   const qty = parseInt(quantitySelect.value, 10);
   const div = document.getElementById("codes-result");
-  div.textContent = "Loading...";
+  div.textContent = "Processing...";
   try {
     const res = await fetch("/get-code", {
       method: "POST",
@@ -214,14 +219,18 @@ getCodesBtn.addEventListener("click", async () => {
       body: JSON.stringify({ service: selectedService, quantity: qty })
     });
     const data = await res.json();
-    if (data.error) div.textContent = data.error;
-    else resultDiv.innerHTML = `
+    if (data.error) {
+      div.textContent = data.error;
+      return;
+    }
+
+    div.innerHTML = `
       <p><strong>Transaction ID:</strong> ${data.txnId}</p>
       <p><strong>Codes:</strong><br>${data.codes.join("<br>")}</p>
       <p><strong>Total due:</strong> $${data.total}</p>
     `;
-
-  } catch {
+  } catch (err) {
+    console.error(err);
     div.textContent = "Unknown error";
   }
 });
@@ -231,40 +240,33 @@ document.getElementById("retrieve-btn").addEventListener("click", async () => {
   const txnId = document.getElementById("txn-id").value.trim();
   const div = document.getElementById("retrieved-codes");
   div.innerHTML = "";
+
   if (!txnId) return alert("Please enter a transaction ID");
+
+  div.textContent = "Loading...";
   try {
-    const res = await fetch("/get-code", {
+    const res = await fetch("/retrieve-codes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service, quantity })
+      body: JSON.stringify({ txnId })
     });
+    const data = await res.json();
 
-    const text = await res.text();
-    console.log("Raw response:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      document.getElementById("status").textContent =
-        "Error: Server returned invalid JSON";
+    if (!res.ok || data.error) {
+      div.textContent = data.error || "Unknown error retrieving codes";
       return;
     }
 
-    if (!res.ok) {
-      document.getElementById("status").textContent =
-        data.error || "Unknown error purchasing codes";
-      return;
-    }
-
-    document.getElementById("status").textContent =
-      `Purchased ${data.codes.length} code(s). Total: $${data.total}`;
+    div.innerHTML = `
+      <strong>Codes:</strong><br>
+      ${data.codes.join("<br>")}
+    `;
   } catch (err) {
-    console.error("Fetch error:", err);
-    document.getElementById("status").textContent =
-      "Network error purchasing codes";
+    console.error(err);
+    div.textContent = "Network error retrieving codes";
   }
 });
 </script>
+
 </body>
 </html>
