@@ -151,25 +151,45 @@ app.post("/retrieve-codes", async (req, res) => {
 
 // Get codes
 app.post("/get-code", async (req, res) => {
+  console.log("=== /get-code called ===");
+  console.log("Body received:", req.body);
+  console.log("Session:", req.session);
+
   const email = req.session.email;
   const { service, quantity } = req.body;
   const qty = parseInt(quantity, 10) || 1;
 
-  if (!email) return res.status(401).json({ error: "Unauthorized" });
+  if (!email) {
+    console.log("FAIL: No email in session");
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!service) {
+    console.log("FAIL: No service provided");
+    return res.status(400).json({ error: "Service required" });
+  }
+
+  console.log("Service:", service, "Quantity:", qty);
 
   try {
     const docId = service === "Uber" ? "codes-uber" : "codes-doordash";
+    console.log("Fetching doc:", docId);
+
     const codesResponse = await client.getDocument({ db: DB_NAME, docId });
     const codesDoc = codesResponse.result;
 
+    console.log("Document retrieved. Code count:", codesDoc.codes?.length);
+
     const unusedCodes = codesDoc.codes.filter(c => !c.used);
+    console.log("Unused codes:", unusedCodes.length);
 
     if (unusedCodes.length === 0) {
-      log(`Code request when none left: ${email} requested ${qty} ${service} code(s)`);
+      console.log("FAIL: No codes left");
       return res.status(400).json({ error: `No ${service} codes left` });
     }
 
     if (unusedCodes.length < qty) {
+      console.log("FAIL: Not enough codes available");
       return res.status(400).json({ error: `Only ${unusedCodes.length} codes available` });
     }
 
@@ -183,11 +203,11 @@ app.post("/get-code", async (req, res) => {
       c.txnId = txnId;
     });
 
+    console.log("Updating Cloudant…");
     await client.putDocument({ db: DB_NAME, docId, document: codesDoc });
 
-    log(`Transaction ${txnId} - ${email} requested ${qty} ${service} code(s)`);
-
     const total = selected.length * 40;
+    console.log("SUCCESS:", qty, "codes, txn", txnId);
 
     return res.json({
       codes: selected.map(c => c.code),
@@ -195,7 +215,9 @@ app.post("/get-code", async (req, res) => {
       count: selected.length,
       total
     });
+
   } catch (err) {
+    console.log("CATCH BLOCK TRIGGERED");
     console.error(err);
     return res.status(500).json({ error: "Unknown error" });
   }
