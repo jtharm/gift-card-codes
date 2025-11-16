@@ -51,6 +51,29 @@
     margin-bottom: 20px;
   }
 
+  .section {
+    margin-bottom: 25px;
+    padding: 15px;
+    border-radius: 12px;
+    background: #f9f9f9;
+  }
+
+  .section label {
+    display: block;
+    margin: 8px 0;
+  }
+
+  textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: vertical;
+  }
+
   button.action-btn {
     width: 100%;
     padding: 16px;
@@ -59,7 +82,7 @@
     border: none;
     border-radius: 12px;
     font-size: 17px;
-    margin-bottom: 20px;
+    margin-top: 10px;
   }
 
   button.action-btn:active {
@@ -72,7 +95,6 @@
     font-size: 15px;
   }
 </style>
-
 </head>
 <body>
 
@@ -84,13 +106,27 @@
 <div class="container">
   <h2>Admin Tools</h2>
 
-  <button class="action-btn" id="reset-btn">Reset ALL Codes</button>
+  <!-- Reset all codes -->
+  <div class="section">
+    <button class="action-btn" id="reset-btn">Reset ALL Codes</button>
+  </div>
+
+  <!-- Add new codes -->
+  <div class="section">
+    <label><input type="radio" name="service" value="codes-uber"> Uber</label>
+    <label><input type="radio" name="service" value="codes-doordash"> DoorDash</label>
+
+    <label>Add new codes (one per line):</label>
+    <textarea id="new-codes"></textarea>
+
+    <button class="action-btn" id="add-codes-btn">Add Codes</button>
+  </div>
 
   <div id="status"></div>
 </div>
 
 <script>
-// Check admin session
+// Load admin session
 async function loadAdmin() {
   const res = await fetch("/admin/session");
   if (!res.ok) return (window.location.href = "/admin-login.html");
@@ -100,16 +136,47 @@ async function loadAdmin() {
 }
 loadAdmin();
 
-// Reset codes
+// Reset all codes
 document.getElementById("reset-btn").addEventListener("click", async () => {
   if (!confirm("Are you sure you want to reset ALL codes?")) return;
-
   const status = document.getElementById("status");
   status.textContent = "Processing...";
-
   const res = await fetch("/admin/reset-codes", { method: "POST" });
   if (res.ok) status.textContent = "All codes reset successfully.";
   else status.textContent = "Error resetting codes.";
+});
+
+// Add new codes
+document.getElementById("add-codes-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status");
+  if (!serviceRadio) return alert("Please select a service first.");
+  const docId = serviceRadio.value;
+
+  const codesText = document.getElementById("new-codes").value.trim();
+  if (!codesText) return alert("Please enter at least one code.");
+
+  const codesArray = codesText.split("\n").map(c => c.trim()).filter(c => c);
+
+  status.textContent = "Adding codes...";
+  try {
+    const res = await fetch("/admin/add-codes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ docId, codes: codesArray })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      status.textContent = `Successfully added ${codesArray.length} codes to ${docId}.`;
+      document.getElementById("new-codes").value = "";
+    } else {
+      status.textContent = data.error || "Error adding codes.";
+    }
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Unknown error adding codes.";
+  }
 });
 
 // Logout
