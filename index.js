@@ -220,38 +220,15 @@ app.get("/admin/session", (req, res) => {
 });
 
 // Admin reset codes
-app.post("/admin/reset-codes", async (req, res) => {
-  const { email, password } = req.body;
-  console.log(`[${new Date().toISOString()}] Admin reset attempt`);
-
-  // check admin auth
-  if (
-    email !== process.env.ADMIN_EMAIL ||
-    password !== process.env.ADMIN_PASSWORD
-  ) {
-    console.warn(`[${new Date().toISOString()}] Unauthorized admin reset attempt`);
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   try {
     const docs = ["codes-uber", "codes-doordash"];
 
     for (const docId of docs) {
-      console.log(`Fetching document: ${docId}`);
       const response = await client.getDocument({ db: DB_NAME, docId });
-
-      if (!response || !response.result) {
-        console.error(`No document returned for ${docId}`);
-        continue;
-      }
-
       const doc = response.result;
-      console.log(`Document ${docId} retrieved successfully. Number of codes: ${doc.codes?.length || 0}`);
 
-      if (!Array.isArray(doc.codes)) {
-        console.warn(`Document ${docId} has no codes array`);
-        continue;
-      }
+      if (!Array.isArray(doc.codes)) continue;
 
       doc.codes.forEach(c => {
         c.used = false;
@@ -259,16 +236,14 @@ app.post("/admin/reset-codes", async (req, res) => {
         delete c.usedAt;
         delete c.txnId;
       });
-      console.log(`Reset ${doc.codes.length} codes for ${docId}`);
 
-      const putResp = await client.putDocument({ db: DB_NAME, docId, document: doc });
-      console.log(`Updated document ${docId}:`, putResp.result);
+      await client.putDocument({ db: DB_NAME, docId, document: doc });
     }
 
-    console.log(`[${new Date().toISOString()}] Admin reset completed successfully`);
+    console.log(`[${new Date().toISOString()}] Admin reset all codes`);
     return res.json({ message: "All codes have been reset" });
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] Error resetting codes:`, err);
+    console.error(err);
     return res.status(500).json({ error: "Error resetting codes" });
   }
 });
