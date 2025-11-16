@@ -2,59 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Get Codes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gift Card Codes</title>
   <style>
     body {
-      position: relative;
-      padding-top: 40px; /* space for top bar */
       font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
     }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
     #logout-btn {
       position: absolute;
       top: 10px;
       right: 10px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
     }
-    .success { color: green; }
-    .error { color: red; }
-    h2 { margin-top: 0; }
+
+    label {
+      display: block;
+      margin: 8px 0;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-top: 4px;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 1rem;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+
+    .success { color: green; margin-top: 10px; }
+    .error { color: red; margin-top: 10px; }
+
+    @media (max-width: 480px) {
+      body { padding: 10px; }
+      button, select, input[type="text"] { font-size: 1rem; }
+    }
   </style>
 </head>
 <body>
-  <h2>Welcome, <span id="userEmail"></span></h2>
-
   <form id="logout-form" method="POST" action="/logout" style="display:inline;">
     <button type="submit" id="logout-btn">Logout</button>
   </form>
 
+  <h2>Welcome, <span id="userEmail"></span></h2>
+
   <!-- Mode selection -->
-  <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
-  <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
-  <br><br>
+  <div class="section">
+    <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
+    <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
+  </div>
 
   <!-- Purchase codes -->
-  <div id="purchase-section" style="display:none;">
+  <div id="purchase-section" class="section" style="display:none;">
     <label><input type="radio" name="service" value="Uber"> Uber</label>
-    <label><input type="radio" name="service" value="DoorDash"> DoorDash</label><br><br>
+    <label><input type="radio" name="service" value="DoorDash"> DoorDash</label>
 
     <label>Quantity:
-      <select id="quantity" disabled>
-        <option value="1">1</option>
-      </select>
-    </label><br><br>
+      <select id="quantity"></select>
+    </label>
 
-    <button id="get-codes-btn" disabled>Get Codes</button><br><br>
+    <button id="get-codes-btn" disabled>Get Codes</button>
     <div id="codes-result"></div>
   </div>
 
   <!-- Retrieve codes -->
-  <div id="retrieve-section" style="display:none;">
-    <label>Transaction ID:<br><input type="text" id="txn-id"></label>
+  <div id="retrieve-section" class="section" style="display:none;">
+    <label>Transaction ID:
+      <input type="text" id="txn-id">
+    </label>
     <button id="retrieve-btn">Retrieve</button>
     <div id="retrieved-codes"></div>
   </div>
 
   <script>
-    // Load user email
     async function loadUserEmail() {
       const res = await fetch("/session-info");
       if (!res.ok) return window.location = "/"; // force login
@@ -64,7 +105,6 @@
     }
     loadUserEmail();
 
-    // Mode toggle
     const modeRadios = document.querySelectorAll('input[name="mode"]');
     const purchaseSection = document.getElementById("purchase-section");
     const retrieveSection = document.getElementById("retrieve-section");
@@ -81,7 +121,7 @@
       });
     });
 
-    // Purchase codes logic
+    // Purchase codes
     const getCodesBtn = document.getElementById("get-codes-btn");
     const quantitySelect = document.getElementById("quantity");
     let selectedService = null;
@@ -92,26 +132,21 @@
         selectedService = r.value;
         availableLoaded = false;
         updateButtonState();
-        quantitySelect.disabled = true;
-        quantitySelect.innerHTML = "<option>Loading...</option>";
+        quantitySelect.innerHTML = "";
         try {
           const res = await fetch(`/available?service=${selectedService}`);
           const data = await res.json();
           const available = data.available;
-          const maxQty = Math.min(available, 4); // max 4 or available
-          quantitySelect.innerHTML = "";
+          const maxQty = Math.min(available, 4);
           for (let i = 1; i <= maxQty; i++) {
             const option = document.createElement("option");
             option.value = i;
             option.textContent = i;
             quantitySelect.appendChild(option);
           }
-          quantitySelect.disabled = false;
           availableLoaded = true;
           updateButtonState();
         } catch {
-          quantitySelect.innerHTML = "<option>1</option>";
-          quantitySelect.disabled = true;
           availableLoaded = false;
           updateButtonState();
         }
@@ -135,30 +170,17 @@
         const data = await res.json();
         if (data.error) div.textContent = data.error;
         else div.innerHTML = `${data.codes.join("<br>")}<br><br>Transaction ID: <strong>${data.txnId}</strong>, save this ID to recover the gift card code later.`;
-
-        // Refresh quantity dropdown
-        const availRes = await fetch(`/available?service=${selectedService}`);
-        const availData = await availRes.json();
-        const maxQty = Math.min(availData.available, 4);
-        quantitySelect.innerHTML = "";
-        for (let i = 1; i <= maxQty; i++) {
-          const option = document.createElement("option");
-          option.value = i;
-          option.textContent = i;
-          quantitySelect.appendChild(option);
-        }
       } catch {
         div.textContent = "Unknown error";
       }
     });
 
-    // Retrieve codes logic
+    // Retrieve codes
     document.getElementById("retrieve-btn").addEventListener("click", async () => {
       const txnId = document.getElementById("txn-id").value.trim();
       const div = document.getElementById("retrieved-codes");
       div.innerHTML = "";
       if (!txnId) return alert("Please enter a transaction ID");
-
       try {
         const res = await fetch("/retrieve-codes", {
           method: "POST",
@@ -168,7 +190,7 @@
         const data = await res.json();
         if (data.error) div.textContent = data.error;
         else div.innerHTML = data.codes.join("<br>");
-      } catch (err) {
+      } catch {
         div.textContent = "Unknown error";
       }
     });
