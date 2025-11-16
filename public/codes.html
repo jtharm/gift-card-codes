@@ -233,16 +233,36 @@ document.getElementById("retrieve-btn").addEventListener("click", async () => {
   div.innerHTML = "";
   if (!txnId) return alert("Please enter a transaction ID");
   try {
-    const res = await fetch("/retrieve-codes", {
+    const res = await fetch("/get-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ txnId })
+      body: JSON.stringify({ service, quantity })
     });
-    const data = await res.json();
-    if (data.error) div.textContent = data.error;
-    else div.innerHTML = data.codes.join("<br>");
-  } catch {
-    div.textContent = "Unknown error";
+
+    const text = await res.text();
+    console.log("Raw response:", text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      document.getElementById("status").textContent =
+        "Error: Server returned invalid JSON";
+      return;
+    }
+
+    if (!res.ok) {
+      document.getElementById("status").textContent =
+        data.error || "Unknown error purchasing codes";
+      return;
+    }
+
+    document.getElementById("status").textContent =
+      `Purchased ${data.codes.length} code(s). Total: $${data.total}`;
+  } catch (err) {
+    console.error("Fetch error:", err);
+    document.getElementById("status").textContent =
+      "Network error purchasing codes";
   }
 });
 </script>
