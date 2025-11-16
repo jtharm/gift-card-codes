@@ -219,18 +219,42 @@ app.get("/admin/session", (req, res) => {
   res.status(401).send("Unauthorized");
 });
 
-app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
-  try {
-    const collections = ["codes-uber", "codes-doordash"];
+// Admin reset codes
+app.post("/admin/reset-codes", async (req, res) => {
+  const { email, password } = req.body;
 
-    for (let name of collections) {
-      await db.collection(name).updateMany({}, { $set: { used: false } });
+  // check against env variables for admin auth
+  if (
+    email !== process.env.ADMIN_EMAIL ||
+    password !== process.env.ADMIN_PASSWORD
+  ) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const docs = ["codes-uber", "codes-doordash"];
+
+    for (const docId of docs) {
+      const response = await client.getDocument({ db: DB_NAME, docId });
+      const doc = response.result;
+
+      if (Array.isArray(doc.codes)) {
+        doc.codes.forEach(c => {
+          c.used = false;
+          delete c.usedBy;
+          delete c.usedAt;
+          delete c.txnId;
+        });
+
+        await client.putDocument({ db: DB_NAME, docId, document: doc });
+      }
     }
 
-    res.send("All codes reset successfully.");
+    console.log(`[${new Date().toISOString()}] Admin reset all codes`);
+    return res.json({ message: "All codes have been reset" });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Failed to reset codes");
+    return res.status(500).json({ error: "Error resetting codes" });
   }
 });
 
