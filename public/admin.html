@@ -141,7 +141,7 @@ document.getElementById("reset-btn").addEventListener("click", async () => {
   if (!confirm("Are you sure you want to reset ALL codes?")) return;
   const status = document.getElementById("status");
   status.textContent = "Processing...";
-  const res = await fetch("/admin/reset-codes", { method: "POST" });
+  const res = await fetch("/admin/reset-codes", { method: "POST", credentials: "same-origin" });
   if (res.ok) status.textContent = "All codes reset successfully.";
   else status.textContent = "Error resetting codes.";
 });
