@@ -222,37 +222,53 @@ app.get("/admin/session", (req, res) => {
 // Admin reset codes
 app.post("/admin/reset-codes", async (req, res) => {
   const { email, password } = req.body;
+  console.log(`[${new Date().toISOString()}] Admin reset attempt`);
 
-  // check admin credentials from env
+  // check admin auth
   if (
     email !== process.env.ADMIN_EMAIL ||
     password !== process.env.ADMIN_PASSWORD
   ) {
+    console.warn(`[${new Date().toISOString()}] Unauthorized admin reset attempt`);
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
-    const docIds = ["codes-uber", "codes-doordash"];
+    const docs = ["codes-uber", "codes-doordash"];
 
-    for (const docId of docIds) {
-      const { result: doc } = await client.getDocument({ db: DB_NAME, docId });
+    for (const docId of docs) {
+      console.log(`Fetching document: ${docId}`);
+      const response = await client.getDocument({ db: DB_NAME, docId });
 
-      if (Array.isArray(doc.codes)) {
-        doc.codes.forEach(c => {
-          c.used = false;
-          delete c.usedBy;
-          delete c.usedAt;
-          delete c.txnId;
-        });
-
-        await client.putDocument({ db: DB_NAME, docId, document: doc });
+      if (!response || !response.result) {
+        console.error(`No document returned for ${docId}`);
+        continue;
       }
+
+      const doc = response.result;
+      console.log(`Document ${docId} retrieved successfully. Number of codes: ${doc.codes?.length || 0}`);
+
+      if (!Array.isArray(doc.codes)) {
+        console.warn(`Document ${docId} has no codes array`);
+        continue;
+      }
+
+      doc.codes.forEach(c => {
+        c.used = false;
+        delete c.usedBy;
+        delete c.usedAt;
+        delete c.txnId;
+      });
+      console.log(`Reset ${doc.codes.length} codes for ${docId}`);
+
+      const putResp = await client.putDocument({ db: DB_NAME, docId, document: doc });
+      console.log(`Updated document ${docId}:`, putResp.result);
     }
 
-    console.log(`[${new Date().toISOString()}] Admin reset all codes`);
+    console.log(`[${new Date().toISOString()}] Admin reset completed successfully`);
     return res.json({ message: "All codes have been reset" });
   } catch (err) {
-    console.error("Reset codes error:", err);
+    console.error(`[${new Date().toISOString()}] Error resetting codes:`, err);
     return res.status(500).json({ error: "Error resetting codes" });
   }
 });
