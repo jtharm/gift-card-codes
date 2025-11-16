@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+</head>
+<body>
+  <h1>Login</h1>
+  <form action="/login" method="POST">
+    <input id="email" type="email" name="email" placeholder="Enter your email" required />
+    <button type="submit">Login</button>
+  </form>
+  <p style="color:red;">
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get('error');
+      const email = urlParams.get('email');
+
+      if (error) document.write(error);
+
+      // Keep email in input if passed
+      if (email) document.getElementById('email').value = email;
+    </script>
+  </p>
+</body>
+</html>

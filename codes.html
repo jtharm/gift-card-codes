@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Get Codes</title>
+  <style>
+    body {
+      position: relative;
+      padding-top: 40px; /* space for top bar */
+      font-family: Arial, sans-serif;
+    }
+    #logout-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .success { color: green; }
+    .error { color: red; }
+    h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h2>Welcome, <span id="userEmail"></span></h2>
+
+  <form id="logout-form" method="POST" action="/logout" style="display:inline;">
+    <button type="submit" id="logout-btn">Logout</button>
+  </form>
+
+  <!-- Mode selection -->
+  <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
+  <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
+  <br><br>
+
+  <!-- Purchase codes -->
+  <div id="purchase-section" style="display:none;">
+    <label><input type="radio" name="service" value="Uber"> Uber</label>
+    <label><input type="radio" name="service" value="DoorDash"> DoorDash</label><br><br>
+
+    <label>Quantity:
+      <select id="quantity" disabled>
+        <option value="1">1</option>
+      </select>
+    </label><br><br>
+
+    <button id="get-codes-btn" disabled>Get Codes</button><br><br>
+    <div id="codes-result"></div>
+  </div>
+
+  <!-- Retrieve codes -->
+  <div id="retrieve-section" style="display:none;">
+    <label>Transaction ID:<br><input type="text" id="txn-id"></label>
+    <button id="retrieve-btn">Retrieve</button>
+    <div id="retrieved-codes"></div>
+  </div>
+
+  <script>
+    // Load user email
+    async function loadUserEmail() {
+      const res = await fetch("/session-info");
+      if (!res.ok) return window.location = "/"; // force login
+      const data = await res.json();
+      window.USER_EMAIL = data.email;
+      document.getElementById("userEmail").textContent = data.email;
+    }
+    loadUserEmail();
+
+    // Mode toggle
+    const modeRadios = document.querySelectorAll('input[name="mode"]');
+    const purchaseSection = document.getElementById("purchase-section");
+    const retrieveSection = document.getElementById("retrieve-section");
+
+    modeRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "retrieve") {
+          retrieveSection.style.display = "block";
+          purchaseSection.style.display = "none";
+        } else if (radio.value === "purchase") {
+          purchaseSection.style.display = "block";
+          retrieveSection.style.display = "none";
+        }
+      });
+    });
+
+    // Purchase codes logic
+    const getCodesBtn = document.getElementById("get-codes-btn");
+    const quantitySelect = document.getElementById("quantity");
+    let selectedService = null;
+    let availableLoaded = false;
+
+    document.getElementsByName("service").forEach(r => {
+      r.addEventListener("change", async () => {
+        selectedService = r.value;
+        availableLoaded = false;
+        updateButtonState();
+        quantitySelect.disabled = true;
+        quantitySelect.innerHTML = "<option>Loading...</option>";
+        try {
+          const res = await fetch(`/available?service=${selectedService}`);
+          const data = await res.json();
+          const available = data.available;
+          const maxQty = Math.min(available, 4); // max 4 or available
+          quantitySelect.innerHTML = "";
+          for (let i = 1; i <= maxQty; i++) {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = i;
+            quantitySelect.appendChild(option);
+          }
+          quantitySelect.disabled = false;
+          availableLoaded = true;
+          updateButtonState();
+        } catch {
+          quantitySelect.innerHTML = "<option>1</option>";
+          quantitySelect.disabled = true;
+          availableLoaded = false;
+          updateButtonState();
+        }
+      });
+    });
+
+    function updateButtonState() {
+      getCodesBtn.disabled = !selectedService || !availableLoaded;
+    }
+
+    getCodesBtn.addEventListener("click", async () => {
+      const qty = parseInt(quantitySelect.value, 10);
+      const div = document.getElementById("codes-result");
+      div.textContent = "Loading...";
+      try {
+        const res = await fetch("/get-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ service: selectedService, quantity: qty })
+        });
+        const data = await res.json();
+        if (data.error) div.textContent = data.error;
+        else div.innerHTML = `${data.codes.join("<br>")}<br><br>Transaction ID: <strong>${data.txnId}</strong>, save this ID to recover the gift card code later.`;
+
+        // Refresh quantity dropdown
+        const availRes = await fetch(`/available?service=${selectedService}`);
+        const availData = await availRes.json();
+        const maxQty = Math.min(availData.available, 4);
+        quantitySelect.innerHTML = "";
+        for (let i = 1; i <= maxQty; i++) {
+          const option = document.createElement("option");
+          option.value = i;
+          option.textContent = i;
+          quantitySelect.appendChild(option);
+        }
+      } catch {
+        div.textContent = "Unknown error";
+      }
+    });
+
+    // Retrieve codes logic
+    document.getElementById("retrieve-btn").addEventListener("click", async () => {
+      const txnId = document.getElementById("txn-id").value.trim();
+      const div = document.getElementById("retrieved-codes");
+      div.innerHTML = "";
+      if (!txnId) return alert("Please enter a transaction ID");
+
+      try {
+        const res = await fetch("/retrieve-codes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ txnId })
+        });
+        const data = await res.json();
+        if (data.error) div.textContent = data.error;
+        else div.innerHTML = data.codes.join("<br>");
+      } catch (err) {
+        div.textContent = "Unknown error";
+      }
+    });
+  </script>
+</body>
+</html>
