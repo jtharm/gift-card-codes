@@ -4,8 +4,9 @@ const session = require("express-session");
 const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
-
 const app = express();
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -16,6 +17,11 @@ app.use(express.static("public"));
 function log(message) {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${message}`);
+}
+
+function requireAdmin(req, res, next) {
+  if (req.session && req.session.isAdmin) return next();
+  return res.status(401).send("Unauthorized");
 }
 
 // ----------------------
@@ -48,6 +54,18 @@ const DB_NAME = process.env.CLOUDANT_DB;
 // Login page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/login.html"));
+});
+
+app.post("/admin/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    req.session.isAdmin = true;
+    req.session.adminEmail = email;
+    return res.sendStatus(200);
+  }
+
+  return res.status(401).send("Invalid credentials");
 });
 
 // Handle login
@@ -191,6 +209,28 @@ app.get("/available", async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ available: 0 });
+  }
+});
+
+app.get("/admin/session", (req, res) => {
+  if (req.session && req.session.isAdmin) {
+    return res.json({ email: req.session.adminEmail });
+  }
+  res.status(401).send("Unauthorized");
+});
+
+app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
+  try {
+    const collections = ["code-uber", "code-doordash"];
+
+    for (let name of collections) {
+      await db.collection(name).updateMany({}, { $set: { used: false } });
+    }
+
+    res.send("All codes reset successfully.");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Failed to reset codes");
   }
 });
 

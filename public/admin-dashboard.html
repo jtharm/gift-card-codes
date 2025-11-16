@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #fafafa;
+    }
+    h2 { margin-bottom: 20px; }
+    button {
+      width: 100%;
+      padding: 15px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    button:active {
+      background: #b52a37;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 16px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Admin Dashboard</h2>
+
+<button id="reset-btn">Reset ALL Codes</button>
+
+<div id="result"></div>
+
+<script>
+// Verify admin session
+(async () => {
+  const res = await fetch("/admin/session");
+  if (!res.ok) window.location = "/admin-login.html";
+})();
+
+document.getElementById("reset-btn").addEventListener("click", async () => {
+  if (!confirm("Are you sure you want to reset ALL codes?")) return;
+
+  const res = await fetch("/admin/reset-codes", { method: "POST" });
+  const text = await res.text();
+
+  document.getElementById("result").textContent = text;
+});
+</script>
+
+</body>
+</html>
