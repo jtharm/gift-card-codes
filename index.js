@@ -221,7 +221,7 @@ app.get("/admin/session", (req, res) => {
 
 app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   try {
-    const collections = ["code-uber", "code-doordash"];
+    const collections = ["codes-uber", "codes-doordash"];
 
     for (let name of collections) {
       await db.collection(name).updateMany({}, { $set: { used: false } });
