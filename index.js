@@ -223,7 +223,7 @@ app.get("/admin/session", (req, res) => {
 app.post("/admin/reset-codes", async (req, res) => {
   const { email, password } = req.body;
 
-  // check against env variables for admin auth
+  // check admin credentials from env
   if (
     email !== process.env.ADMIN_EMAIL ||
     password !== process.env.ADMIN_PASSWORD
@@ -232,11 +232,10 @@ app.post("/admin/reset-codes", async (req, res) => {
   }
 
   try {
-    const docs = ["codes-uber", "codes-doordash"];
+    const docIds = ["codes-uber", "codes-doordash"];
 
-    for (const docId of docs) {
-      const response = await client.getDocument({ db: DB_NAME, docId });
-      const doc = response.result;
+    for (const docId of docIds) {
+      const { result: doc } = await client.getDocument({ db: DB_NAME, docId });
 
       if (Array.isArray(doc.codes)) {
         doc.codes.forEach(c => {
@@ -253,7 +252,7 @@ app.post("/admin/reset-codes", async (req, res) => {
     console.log(`[${new Date().toISOString()}] Admin reset all codes`);
     return res.json({ message: "All codes have been reset" });
   } catch (err) {
-    console.error(err);
+    console.error("Reset codes error:", err);
     return res.status(500).json({ error: "Error resetting codes" });
   }
 });
