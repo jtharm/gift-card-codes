@@ -8,8 +8,8 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-import Mailgun from "mailgun.js";
-import formData from "form-data";
+const Mailgun = require("mailgun.js");
+const formData = require("form-data");
 
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
