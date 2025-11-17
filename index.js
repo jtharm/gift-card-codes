@@ -63,14 +63,13 @@ Thank you for your purchase!
 Transaction ID: ${txnId}
 Service: ${service}
 Quantity: ${codes.length}
+Codes:
+
+${codes.join("\n")}
 
 Total: $${total}
 
-Please make e-transfer payment to jeeva86@hotmail.com.
-
-Your codes:
-
-${codes.join("\n")}
+Please make e-transfer payment to mailto:jeeva86@hotmail.com.
 
 Regards,
 
@@ -79,9 +78,9 @@ Jeeva
 
   try {
     const result = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-      from: "Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>",
+      from: `Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>`,
       to: toEmail,
-      subject: "Your Purchase Confirmation - ${txnId}",
+      subject: `Your Purchase Confirmation - ${txnId}`,
       text: message
     });
 
