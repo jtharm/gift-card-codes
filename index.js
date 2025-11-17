@@ -8,6 +8,13 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+const mailgun = require("mailgun-js");
+
+const mg = mailgun({
+  apiKey: process.env.MAILGUN_API_KEY,  // from Mailgun dashboard
+  domain: process.env.MAILGUN_DOMAIN    // e.g., mg.yourdomain.com
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -208,6 +215,28 @@ app.post("/get-code", async (req, res) => {
 
     const total = selected.length * 40;
     console.log("SUCCESS:", qty, "codes, txn", txnId);
+
+    // --- SEND EMAIL ---
+    const emailData = {
+      from: `Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>`,
+      to: email,
+      subject: "Your Gift Card Codes - ${txnId}",
+      html: `
+        <h2>Thank you for your purchase!</h2>
+        <p><strong>Transaction ID:</strong> ${txnId}</p>
+        <p><strong>Service:</strong> ${service}</p>
+        <p><strong>Codes:</strong><br>${selected.map(c => c.code).join("<br>")}</p>
+        <p><strong>Total:</strong> $${total}</p>
+        <p>Please make e-transfer payment to <strong>jeeva86@hotmail.com</strong></p>
+
+        <p>Enjoy your gift cards!</p>
+      `
+    };
+
+    mg.messages().send(emailData, function (error, body) {
+      if (error) console.error("Mailgun error:", error);
+      else console.log("Mailgun sent:", body);
+    });
 
     return res.json({
       codes: selected.map(c => c.code),
