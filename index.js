@@ -8,11 +8,13 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const mailgun = require("mailgun-js");
+const formData = require("form-data");
+const Mailgun = require("@mailgun/mailgun-js");
 
-const mg = mailgun({
-  apiKey: process.env.MAILGUN_API_KEY,  // from Mailgun dashboard
-  domain: process.env.MAILGUN_DOMAIN    // e.g., mg.yourdomain.com
+const mg = Mailgun({
+  apiKey: process.env.MAILGUN_API_KEY,
+  domain: process.env.MAILGUN_DOMAIN,
+  formData: formData
 });
 
 app.use(express.json());
@@ -233,7 +235,7 @@ app.post("/get-code", async (req, res) => {
       `
     };
 
-    mg.messages().send(emailData, function (error, body) {
+    mg.messages().send(emailData, (error, body) => {
       if (error) console.error("Mailgun error:", error);
       else console.log("Mailgun sent:", body);
     });
