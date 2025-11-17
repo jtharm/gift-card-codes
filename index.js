@@ -255,11 +255,11 @@ app.post("/get-code", async (req, res) => {
 
     // --- SEND EMAIL ---
     await sendPurchaseEmail(
-      req.session.email,
-      txnId,
-      service,
-      codesToGive,
-      totalPrice
+      email,                              // buyer email
+      txnId,                              // transaction ID
+      service,                            // e.g. "Uber"
+      selected.map(c => c.code),          // array of codes
+      total                               // total price
     );
 
     return res.json({
