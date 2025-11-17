@@ -228,8 +228,7 @@ getCodesBtn.addEventListener("click", async () => {
       <p><strong>Transaction ID:</strong> ${data.txnId}</p>
       <p>Gift card codes have been sent to ${USER_EMAIL}.</p>
       <p><strong>Total due:</strong> $${data.total}</p>
-      <p>Please make e-transfer payment to <strong>mailto:jeeva86@hotmail.com.</strong></p>
-
+      <p>Please make e-transfer payment to <a href="mailto:jeeva86@hotmail.com"><strong>jeeva86@hotmail.com</strong></a>.</p>
     `;
   } catch (err) {
     console.error(err);

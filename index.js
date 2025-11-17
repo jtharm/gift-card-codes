@@ -69,7 +69,7 @@ ${codes.join("\n")}
 
 Total: $${total}
 
-Please make e-transfer payment to mailto:jeeva86@hotmail.com.
+Please make e-transfer payment to jeeva86@hotmail.com.
 
 Regards,
 
