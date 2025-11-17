@@ -8,13 +8,13 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const formData = require("form-data");
-const Mailgun = require("@mailgun/mailgun-js");
+import Mailgun from "mailgun.js";
+import formData from "form-data";
 
-const mg = Mailgun({
-  apiKey: process.env.MAILGUN_API_KEY,
-  domain: process.env.MAILGUN_DOMAIN,
-  formData: formData
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: "api",
+  key: process.env.MAILGUN_API_KEY
 });
 
 app.use(express.json());
@@ -55,6 +55,41 @@ const client = CloudantV1.newInstance({
 });
 
 const DB_NAME = process.env.CLOUDANT_DB;
+
+async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
+  const message = `
+Thank you for your purchase!
+
+Transaction ID: ${txnId}
+Service: ${service}
+Quantity: ${codes.length}
+
+Total: $${total}
+
+Please make e-transfer payment to jeeva86@hotmail.com.
+
+Your codes:
+
+${codes.join("\n")}
+
+Regards,
+
+Jeeva
+`;
+
+  try {
+    const result = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
+      from: "Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>",
+      to: toEmail,
+      subject: "Your Purchase Confirmation - ${txnId}",
+      text: message
+    });
+
+    console.log("Mailgun sent:", result);
+  } catch (err) {
+    console.error("Mailgun error:", err);
+  }
+}
 
 // ----------------------
 // ROUTES
@@ -219,26 +254,13 @@ app.post("/get-code", async (req, res) => {
     console.log("SUCCESS:", qty, "codes, txn", txnId);
 
     // --- SEND EMAIL ---
-    const emailData = {
-      from: `Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>`,
-      to: email,
-      subject: "Your Gift Card Codes - ${txnId}",
-      html: `
-        <h2>Thank you for your purchase!</h2>
-        <p><strong>Transaction ID:</strong> ${txnId}</p>
-        <p><strong>Service:</strong> ${service}</p>
-        <p><strong>Codes:</strong><br>${selected.map(c => c.code).join("<br>")}</p>
-        <p><strong>Total:</strong> $${total}</p>
-        <p>Please make e-transfer payment to <strong>jeeva86@hotmail.com</strong></p>
-
-        <p>Enjoy your gift cards!</p>
-      `
-    };
-
-    mg.messages().send(emailData, (error, body) => {
-      if (error) console.error("Mailgun error:", error);
-      else console.log("Mailgun sent:", body);
-    });
+    await sendPurchaseEmail(
+      req.session.email,
+      txnId,
+      service,
+      codesToGive,
+      totalPrice
+    );
 
     return res.json({
       codes: selected.map(c => c.code),
