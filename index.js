@@ -8,7 +8,7 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const MailerSend = require("mailersend").default; // note the .default
+const MailerSend = require("mailersend").MailerSend;
 const { EmailParams, Sender, Recipient } = require("mailersend");
 
 const mailerSend = new MailerSend({
