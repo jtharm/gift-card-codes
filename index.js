@@ -8,13 +8,10 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const Mailgun = require("mailgun.js");
-const formData = require("form-data");
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
 
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: "api",
-  key: process.env.MAILGUN_API_KEY
+const mailerSend = new MailerSend({
+  apiKey: process.env.MAIL_API_KEY
 });
 
 app.use(express.json());
@@ -57,7 +54,7 @@ const client = CloudantV1.newInstance({
 const DB_NAME = process.env.CLOUDANT_DB;
 
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
-  const message = `
+  const messageText = `
 Thank you for your purchase!
 
 Transaction ID: ${txnId}
@@ -76,17 +73,34 @@ Regards,
 Jeeva
 `;
 
-  try {
-    const result = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-      from: `Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>`,
-      to: toEmail,
-      subject: `Your Purchase Confirmation - ${txnId}`,
-      text: message
-    });
+  const messageHtml = `
+<p>Thank you for your purchase!</p>
+<p><strong>Transaction ID:</strong> ${txnId}<br>
+<strong>Service:</strong> ${service}<br>
+<strong>Quantity:</strong> ${codes.length}<br>
+<strong>Codes:</strong><br>${codes.join("<br>")}<br>
+<strong>Total:</strong> $${total}</p>
+<p>Please make e-transfer payment to <strong>jeeva86@hotmail.com</strong>.</p>
+<p>Regards,<br>Jeeva</p>
+`;
 
-    console.log("Mailgun sent:", result);
+  try {
+    const from = new Sender("no-reply@" + process.env.MAILGUN_DOMAIN, "Gift Cards"); // replace with your sending email
+
+    const recipients = [new Recipient(toEmail)];
+
+    const emailParams = new EmailParams()
+      .setFrom(from)
+      .setTo(recipients)
+      .setReplyTo(from)
+      .setSubject(`Your Purchase Confirmation - ${txnId}`)
+      .setText(messageText)
+      .setHtml(messageHtml);
+
+    const result = await mailerSend.email.send(emailParams);
+    console.log("Mail sent:", result);
   } catch (err) {
-    console.error("Mailgun error:", err);
+    console.error("Mail error:", err);
   }
 }
 
