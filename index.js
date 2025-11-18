@@ -8,10 +8,11 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const MailerSend = require("mailersend").MailerSend;
-const { EmailParams, Sender, Recipient } = require("mailersend");
+const MailerSendModule = require("mailersend");
+const { EmailParams, Sender, Recipient } = MailerSendModule;
 
-const mailerSend = new MailerSend({
+// The MailerSend client is available as `MailerSendModule.MailerSend`
+const mailerSend = new MailerSendModule.MailerSend({
   apiKey: process.env.MAIL_API_KEY
 });
 
@@ -55,53 +56,41 @@ const client = CloudantV1.newInstance({
 const DB_NAME = process.env.CLOUDANT_DB;
 
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
-  const messageText = `
+  const from = new Sender("no-reply@" + process.env.MAIL_DOMAIN, "Gift Cards");
+  const recipients = [new Recipient(toEmail)];
+
+  const message = new EmailParams()
+    .setFrom(from)
+    .setTo(recipients)
+    .setSubject(`Your Purchase Confirmation - ${txnId}`)
+    .setHtml(`
+      <p>Thank you for your purchase!</p>
+      <p><strong>Transaction ID:</strong> ${txnId}</p>
+      <p><strong>Service:</strong> ${service}</p>
+      <p><strong>Quantity:</strong> ${codes.length}</p>
+      <p><strong>Codes:</strong><br>${codes.join("<br>")}</p>
+      <p><strong>Total:</strong> $${total}</p>
+      <p>Please make e-transfer payment to jeeva86@hotmail.com</p>
+    `)
+    .setText(`
 Thank you for your purchase!
 
 Transaction ID: ${txnId}
 Service: ${service}
 Quantity: ${codes.length}
 Codes:
-
 ${codes.join("\n")}
 
 Total: $${total}
 
-Please make e-transfer payment to jeeva86@hotmail.com.
-
-Regards,
-
-Jeeva
-`;
-
-  const messageHtml = `
-<p>Thank you for your purchase!</p>
-<p><strong>Transaction ID:</strong> ${txnId}<br>
-<strong>Service:</strong> ${service}<br>
-<strong>Quantity:</strong> ${codes.length}<br>
-<strong>Codes:</strong><br>${codes.join("<br>")}<br>
-<strong>Total:</strong> $${total}</p>
-<p>Please make e-transfer payment to <strong>jeeva86@hotmail.com</strong>.</p>
-<p>Regards,<br>Jeeva</p>
-`;
+Please make e-transfer payment to jeeva86@hotmail.com
+  `);
 
   try {
-    const from = new Sender("no-reply@" + process.env.MAILGUN_DOMAIN, "Gift Cards"); // replace with your sending email
-
-    const recipients = [new Recipient(toEmail)];
-
-    const emailParams = new EmailParams()
-      .setFrom(from)
-      .setTo(recipients)
-      .setReplyTo(from)
-      .setSubject(`Your Purchase Confirmation - ${txnId}`)
-      .setText(messageText)
-      .setHtml(messageHtml);
-
-    const result = await mailerSend.email.send(emailParams);
-    console.log("Mail sent:", result);
+    const result = await mailerSend.email.send(message);
+    console.log("MailerSend sent:", result);
   } catch (err) {
-    console.error("Mail error:", err);
+    console.error("MailerSend error:", err);
   }
 }
 
