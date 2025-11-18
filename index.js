@@ -8,12 +8,6 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend/cjs");
-
-const mailerSend = new MailerSend({
-  apiKey: process.env.MAIL_API_KEY,
-});
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
