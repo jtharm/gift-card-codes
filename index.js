@@ -8,12 +8,10 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const MailerSendModule = require("mailersend");
-const { EmailParams, Sender, Recipient } = MailerSendModule;
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
 
-// The MailerSend client is available as `MailerSendModule.MailerSend`
-const mailerSend = new MailerSendModule.MailerSend({
-  apiKey: process.env.MAIL_API_KEY
+const mailerSend = new MailerSend({
+  apiKey: process.env.MAIL_API_KEY,
 });
 
 app.use(express.json());
