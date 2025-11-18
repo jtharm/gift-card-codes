@@ -54,23 +54,33 @@ const client = CloudantV1.newInstance({
 const DB_NAME = process.env.CLOUDANT_DB;
 
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
-  const from = new Sender("no-reply@" + process.env.MAIL_DOMAIN, "Gift Cards");
-  const recipients = [new Recipient(toEmail)];
+  try {
+    // Dynamically import the ESM-only MailerSend SDK
+    const MailerSendModule = await import("mailersend");
+    const { MailerSend, EmailParams, Sender, Recipient } = MailerSendModule;
 
-  const message = new EmailParams()
-    .setFrom(from)
-    .setTo(recipients)
-    .setSubject(`Your Purchase Confirmation - ${txnId}`)
-    .setHtml(`
-      <p>Thank you for your purchase!</p>
-      <p><strong>Transaction ID:</strong> ${txnId}</p>
-      <p><strong>Service:</strong> ${service}</p>
-      <p><strong>Quantity:</strong> ${codes.length}</p>
-      <p><strong>Codes:</strong><br>${codes.join("<br>")}</p>
-      <p><strong>Total:</strong> $${total}</p>
-      <p>Please make e-transfer payment to jeeva86@hotmail.com</p>
-    `)
-    .setText(`
+    // Create a new MailerSend instance
+    const mailerSend = new MailerSend({
+      apiKey: process.env.MAIL_API_KEY
+    });
+
+    const from = new Sender("no-reply@" + process.env.MAIL_DOMAIN, "Gift Cards");
+    const recipients = [new Recipient(toEmail)];
+
+    const message = new EmailParams()
+      .setFrom(from)
+      .setTo(recipients)
+      .setSubject(`Your Purchase Confirmation - ${txnId}`)
+      .setHtml(`
+        <p>Thank you for your purchase!</p>
+        <p><strong>Transaction ID:</strong> ${txnId}</p>
+        <p><strong>Service:</strong> ${service}</p>
+        <p><strong>Quantity:</strong> ${codes.length}</p>
+        <p><strong>Codes:</strong><br>${codes.join("<br>")}</p>
+        <p><strong>Total:</strong> $${total}</p>
+        <p>Please make e-transfer payment to jeeva86@hotmail.com</p>
+      `)
+      .setText(`
 Thank you for your purchase!
 
 Transaction ID: ${txnId}
@@ -82,9 +92,8 @@ ${codes.join("\n")}
 Total: $${total}
 
 Please make e-transfer payment to jeeva86@hotmail.com
-  `);
+      `);
 
-  try {
     const result = await mailerSend.email.send(message);
     console.log("MailerSend sent:", result);
   } catch (err) {
