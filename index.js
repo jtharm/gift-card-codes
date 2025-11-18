@@ -8,8 +8,7 @@ const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-import pkg from 'mailersend';
-const { MailerSend, EmailParams, Sender, Recipient } = pkg;
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend/cjs");
 
 const mailerSend = new MailerSend({
   apiKey: process.env.MAIL_API_KEY,
