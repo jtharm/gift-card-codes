@@ -51,9 +51,11 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
   try {
     // Dynamically import the ESM-only MailerSend SDK
     const MailerSendModule = await import("mailersend");
-    const { MailerSend, EmailParams, Sender, Recipient } = MailerSendModule;
 
-    // Create a new MailerSend instance
+    // The default export is the MailerSend class
+    const MailerSend = MailerSendModule.default;
+    const { EmailParams, Sender, Recipient } = MailerSendModule;
+
     const mailerSend = new MailerSend({
       apiKey: process.env.MAIL_API_KEY
     });
