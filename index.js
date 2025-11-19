@@ -49,16 +49,16 @@ const DB_NAME = process.env.CLOUDANT_DB;
 
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
   try {
-    // Dynamically import the ESM-only MailerSend SDK
+    // Dynamically import MailerSend ESM module
     const MailerSendModule = await import("mailersend");
 
-    // The default export is the MailerSend class
+    // Correctly access the default export and named exports
     const MailerSend = MailerSendModule.default;
-    const { EmailParams, Sender, Recipient } = MailerSendModule;
+    const Sender = MailerSendModule.Sender;
+    const Recipient = MailerSendModule.Recipient;
+    const EmailParams = MailerSendModule.EmailParams;
 
-    const mailerSend = new MailerSend({
-      apiKey: process.env.MAIL_API_KEY
-    });
+    const mailerSend = new MailerSend({ apiKey: process.env.MAIL_API_KEY });
 
     const from = new Sender("no-reply@" + process.env.MAIL_DOMAIN, "Gift Cards");
     const recipients = [new Recipient(toEmail)];
