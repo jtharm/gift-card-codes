@@ -52,18 +52,17 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
   const apiKey = process.env.MAIL_API_KEY;
   const apiUrl = "https://api.mailersend.com/v1/email";
 
-  const fromEmail = process.env.MAIL_FROM_EMAIL;
+  const fromEmail = "no-reply@" + process.env.MAIL_DOMAIN;
   const fromName = process.env.MAIL_FROM_NAME || "Gift Cards";
 
   const body = {
     from: {
       email: fromEmail,
-      name: fromName,
+      name: fromName
     },
     to: [
       {
-        email: toEmail,
-        name: "", // optional
+        email: toEmail
       },
     ],
     subject: `Your Purchase Confirmation - ${txnId}`,
