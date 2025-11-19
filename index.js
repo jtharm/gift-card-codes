@@ -4,6 +4,7 @@ const session = require("express-session");
 const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
+const axios = require("axios");
 const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -48,35 +49,35 @@ const client = CloudantV1.newInstance({
 const DB_NAME = process.env.CLOUDANT_DB;
 
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
-  try {
-    // Dynamically import MailerSend ESM module
-    const MailerSendModule = await import("mailersend");
+  const apiKey = process.env.MAIL_API_KEY;
+  const apiUrl = "https://api.mailersend.com/v1/email";
 
-    // Correctly access the default export and named exports
-    const MailerSend = MailerSendModule.default;
-    const Sender = MailerSendModule.Sender;
-    const Recipient = MailerSendModule.Recipient;
-    const EmailParams = MailerSendModule.EmailParams;
+  const fromEmail = process.env.MAIL_FROM_EMAIL;
+  const fromName = process.env.MAIL_FROM_NAME || "Gift Cards";
 
-    const mailerSend = new MailerSend({ apiKey: process.env.MAIL_API_KEY });
-
-    const from = new Sender("no-reply@" + process.env.MAIL_DOMAIN, "Gift Cards");
-    const recipients = [new Recipient(toEmail)];
-
-    const message = new EmailParams()
-      .setFrom(from)
-      .setTo(recipients)
-      .setSubject(`Your Purchase Confirmation - ${txnId}`)
-      .setHtml(`
-        <p>Thank you for your purchase!</p>
-        <p><strong>Transaction ID:</strong> ${txnId}</p>
-        <p><strong>Service:</strong> ${service}</p>
-        <p><strong>Quantity:</strong> ${codes.length}</p>
-        <p><strong>Codes:</strong><br>${codes.join("<br>")}</p>
-        <p><strong>Total:</strong> $${total}</p>
-        <p>Please make e-transfer payment to jeeva86@hotmail.com</p>
-      `)
-      .setText(`
+  const body = {
+    from: {
+      email: fromEmail,
+      name: fromName,
+    },
+    to: [
+      {
+        email: toEmail,
+        name: "", // optional
+      },
+    ],
+    subject: `Your Purchase Confirmation - ${txnId}`,
+    html: `
+      <p>Thank you for your purchase!</p>
+      <p><strong>Transaction ID:</strong> ${txnId}</p>
+      <p><strong>Service:</strong> ${service}</p>
+      <p><strong>Quantity:</strong> ${codes.length}</p>
+      <p><strong>Codes:</strong><br>${codes.join("<br>")}</p>
+      <p><strong>Total:</strong> $${total}</p>
+      <p>Please make e‑transfer payment to jeeva86@hotmail.com</p>
+      <p>Regards,<br>Jeeva</p>
+    `,
+    text: `
 Thank you for your purchase!
 
 Transaction ID: ${txnId}
@@ -87,13 +88,27 @@ ${codes.join("\n")}
 
 Total: $${total}
 
-Please make e-transfer payment to jeeva86@hotmail.com
-      `);
+Please make e‑transfer payment to jeeva86@hotmail.com
 
-    const result = await mailerSend.email.send(message);
-    console.log("MailerSend sent:", result);
+Regards,
+Jeeva
+    `,
+  };
+
+  try {
+    const resp = await axios.post(apiUrl, body, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("MailerSend API response:", resp.data);
   } catch (err) {
-    console.error("MailerSend error:", err);
+    if (err.response) {
+      console.error("MailerSend API error:", err.response.status, err.response.data);
+    } else {
+      console.error("MailerSend request error:", err.message);
+    }
   }
 }
 
