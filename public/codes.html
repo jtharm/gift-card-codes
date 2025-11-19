@@ -327,8 +327,9 @@ document.getElementsByName("service").forEach(r => {
 
 getCodesBtn.addEventListener("click", async () => {
   const qty = parseInt(quantitySelect.value, 10);
+  const total = qty * 40;
 
-  const ok = confirm(`Are you sure you want to purchase ${qty} ${selectedService} code(s)?`);
+  const ok = confirm(`Are you sure you want to purchase ${qty} ${selectedService} code(s) for $${total}?`);
   if (!ok) return; // user cancelled
   
   const div = document.getElementById("codes-result");
