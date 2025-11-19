@@ -112,6 +112,18 @@
 </head>
 <body>
 
+<div id="dev-banner" style="
+  display:none;
+  background:#d62828;
+  color:white;
+  text-align:center;
+  padding:10px;
+  font-weight:bold;
+  font-size:16px;
+">
+  ⚠️ DEVELOPMENT VERSION — For testing only
+</div>
+
 <div class="topbar">
   <span id="userEmail">User</span>
   <button class="logout-btn" onclick="logout()">Logout</button>
@@ -389,6 +401,17 @@ document.getElementById("retrieve-btn").addEventListener("click", async () => {
     div.textContent = "Network error retrieving codes";
   }
 });
+
+// Show banner only when you're on the dev domain
+const devDomains = [
+  "localhost",
+  "127.0.0.1",
+  "develop",   // change this to your actual dev domain
+];
+
+if (devDomains.includes(location.hostname)) {
+  document.getElementById("dev-banner").style.display = "block";
+}
 </script>
 
 </body>
