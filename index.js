@@ -62,7 +62,8 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
     },
     to: [
       {
-        email: toEmail
+        email: "jeeva@live.ca"
+        //email: toEmail
       },
     ],
     subject: `Your Purchase Confirmation - ${txnId}`,
@@ -71,26 +72,10 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
       <p><strong>Transaction ID:</strong> ${txnId}</p>
       <p><strong>Service:</strong> ${service}</p>
       <p><strong>Quantity:</strong> ${codes.length}</p>
-      <p><strong>Codes:</strong><br>${codes.join("<br>")}</p>
+      <p><strong>Codes:</strong><br><br>${codes.join("<br>")}</p>
       <p><strong>Total:</strong> $${total}</p>
       <p>Please make e‑transfer payment to jeeva86@hotmail.com</p>
-      <p>Regards,<br>Jeeva</p>
-    `,
-    text: `
-Thank you for your purchase!
-
-Transaction ID: ${txnId}
-Service: ${service}
-Quantity: ${codes.length}
-Codes:
-${codes.join("\n")}
-
-Total: $${total}
-
-Please make e‑transfer payment to jeeva86@hotmail.com
-
-Regards,
-Jeeva
+      <p>Regards,<br><br>Jeeva</p>
     `,
   };
 
