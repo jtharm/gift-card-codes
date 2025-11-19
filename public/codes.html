@@ -134,6 +134,15 @@
     <label>Quantity:
       <select id="quantity"></select>
     </label>
+    
+    <div id="captcha-container" style="margin-top:15px;">
+      <label>Verify you're human:</label>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span id="captcha-question" style="font-weight:bold;"></span>
+        <input id="captcha-answer" type="number" style="width:80px;">
+      </div>
+      <small id="captcha-status" style="color:red;"></small>
+    </div>
 
     <button class="action-btn" id="get-codes-btn" disabled>Get Codes</button>
     <div id="codes-result"></div>
@@ -180,9 +189,39 @@ modeRadios.forEach(radio => {
   });
 });
 
+let captchaCorrect = false;
+
+function generateCaptcha() {
+  const a = Math.floor(Math.random() * 8) + 1;
+  const b = Math.floor(Math.random() * 8) + 1;
+  const answer = a + b;
+  document.getElementById("captcha-question").textContent = `${a} + ${b} = ?`;
+  return answer;
+}
+
+let captchaAnswer = generateCaptcha();
+
+document.getElementById("captcha-answer").addEventListener("input", () => {
+  const userAnswer = Number(document.getElementById("captcha-answer").value);
+  captchaCorrect = userAnswer === captchaAnswer;
+
+  document.getElementById("captcha-status").textContent =
+    captchaCorrect ? "" : "Incorrect answer";
+
+  updateButtonState();
+});
+
+function updateButtonState() {
+  const qty = Number(document.getElementById("quantity").value);
+  const hasQty = qty > 0;
+  getCodesBtn.disabled = !(captchaCorrect && hasQty);
+}
+
 // Purchase codes
 const getCodesBtn = document.getElementById("get-codes-btn");
 const quantitySelect = document.getElementById("quantity");
+quantitySelect.addEventListener("change", updateButtonState);
+
 let selectedService = null;
 
 document.getElementsByName("service").forEach(r => {
@@ -190,18 +229,22 @@ document.getElementsByName("service").forEach(r => {
     selectedService = r.value;
     getCodesBtn.disabled = true;
     quantitySelect.innerHTML = "";
+
     try {
       const res = await fetch(`/available?service=${selectedService}`);
       const data = await res.json();
       const available = data.available;
       const maxQty = Math.min(available, 4);
+
       for (let i = 1; i <= maxQty; i++) {
         const option = document.createElement("option");
         option.value = i;
         option.textContent = i;
         quantitySelect.appendChild(option);
       }
-      getCodesBtn.disabled = maxQty === 0;
+
+      updateButtonState();
+
     } catch {
       getCodesBtn.disabled = true;
     }
@@ -210,6 +253,10 @@ document.getElementsByName("service").forEach(r => {
 
 getCodesBtn.addEventListener("click", async () => {
   const qty = parseInt(quantitySelect.value, 10);
+
+  const ok = confirm(`Are you sure you want to purchase ${qty} ${selectedService} code(s)?`);
+  if (!ok) return; // user cancelled
+  
   const div = document.getElementById("codes-result");
   div.textContent = "Processing...";
   try {
@@ -226,7 +273,7 @@ getCodesBtn.addEventListener("click", async () => {
 
     div.innerHTML = `
       <p><strong>Transaction ID:</strong> ${data.txnId}</p>
-      <p>Gift card codes have been sent to ${USER_EMAIL}, may have gone into your junk mail folder.</p>
+      <p>Gift card codes have been sent from no-reply@test-nrw7gyme6xrg2k8e.mlsender.net to ${USER_EMAIL}, may have gone into your junk mail folder.</p>
       <p><strong>Total due:</strong> $${data.total}</p>
       <p>Please make e-transfer payment to <a href="mailto:jeeva86@hotmail.com"><strong>jeeva86@hotmail.com</strong></a>.</p>
     `;
