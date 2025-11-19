@@ -7,10 +7,11 @@
   "dependencies": {
     "@ibm-cloud/cloudant": "^0.12.11",
     "express": "^4.18.2",
+    "axios": "^1.5.0",
     "express-session": "^1.17.3",
     "ibmcloud-appid": "^6.1.4",
     "passport": "^0.7.0",
-    "mailgun.js": "^10.3.0",
+    "mailersend": "^1.0.2", 
     "form-data": "^4.0.0",
     "uuid": "^13.0.0"
   }

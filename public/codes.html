@@ -147,10 +147,23 @@
     <button class="action-btn" id="retrieve-btn">Retrieve Codes</button>
     <div id="retrieved-codes"></div>
   </div>
+
+  <div id="captcha-box" class="section" style="display:none; text-align:center;">
+    <p id="captcha-question" style="font-weight:600;"></p>
+    <div id="captcha-grid" style="
+        display:grid;
+        grid-template-columns: repeat(3, 60px);
+        gap:10px;
+        justify-content:center;
+        margin-top:10px;
+    "></div>
+    <p id="captcha-error" style="color:red; display:none;">Try again.</p>
+  </div>
 </div>
 
 <script>
 let USER_EMAIL = null;
+let currentMode = null;
 
 // Load user session info
 async function loadUserEmail() {
@@ -175,14 +188,114 @@ const retrieveSection = document.getElementById("retrieve-section");
 
 modeRadios.forEach(radio => {
   radio.addEventListener("change", () => {
-    purchaseSection.style.display = radio.value === "purchase" ? "block" : "none";
-    retrieveSection.style.display = radio.value === "retrieve" ? "block" : "none";
+    currentMode = radio.value;
+
+    purchaseSection.style.display = currentMode === "purchase" ? "block" : "none";
+    retrieveSection.style.display  = currentMode === "retrieve" ? "block" : "none";
+
+    captchaSolved = false;
+    generateCaptcha();
+    updateButtonState();
   });
 });
+
+let captchaAnswer = null;
+let captchaSolved = false;
+
+function generateCaptcha() {
+  captchaSolved = false;
+
+  const emojis = ["🐱", "🐶", "🚗", "🌳", "🍎", "🍌", "🐼", "🎈", "⭐"];
+  const target = emojis[Math.floor(Math.random() * emojis.length)];
+
+  captchaAnswer = target;
+
+  const question = document.getElementById("captcha-question");
+  const grid = document.getElementById("captcha-grid");
+  const error = document.getElementById("captcha-error");
+
+  error.style.display = "none";
+  question.textContent = `Click all tiles containing: ${target}`;
+  grid.innerHTML = "";
+
+  let tiles = [];
+  for (let i = 0; i < 9; i++) {
+    let choice = emojis[Math.floor(Math.random() * emojis.length)];
+    tiles.push(choice);
+  }
+
+  tiles.forEach((emoji, idx) => {
+    const btn = document.createElement("button");
+    btn.textContent = emoji;
+    btn.style.fontSize = "32px";
+    btn.style.padding = "10px";
+    btn.style.borderRadius = "8px";
+    btn.style.cursor = "pointer";
+    btn.style.border = "1px solid #ccc";
+    btn.style.background = "white";
+    btn.dataset.correct = (emoji === target);
+
+    btn.addEventListener("click", () => handleCaptchaClick(btn));
+    grid.appendChild(btn);
+  });
+
+  document.getElementById("captcha-box").style.display = "block";
+}
+
+function handleCaptchaClick(button) {
+  const error = document.getElementById("captcha-error");
+
+  // If they click a wrong tile, CAPTCHA resets
+  if (button.dataset.correct !== "true") {
+    error.style.display = "block";
+    generateCaptcha();
+    updateButtonState();
+    return;
+  }
+
+  // Mark correct tile as selected
+  button.style.background = "#c8e6c9";
+  button.disabled = true;
+
+  // Check if all correct tiles are selected
+  const remaining = [...document.querySelectorAll("#captcha-grid button")]
+    .filter(btn => btn.dataset.correct === "true" && !btn.disabled);
+
+  if (remaining.length === 0) {
+    captchaSolved = true;
+    updateButtonState();
+  }
+}
 
 // Purchase codes
 const getCodesBtn = document.getElementById("get-codes-btn");
 const quantitySelect = document.getElementById("quantity");
+const retrieveBtn = document.getElementById("retrieve-btn"); // add this if not already declared
+
+// Listen for quantity changes
+quantitySelect.addEventListener("change", updateButtonState);
+
+document.getElementById("txn-id").addEventListener("input", updateButtonState);
+
+
+function updateButtonState() {
+  if (!captchaSolved) {
+    getCodesBtn.disabled = true;
+    retrieveBtn.disabled = true;
+    return;
+  }
+
+  if (currentMode === "purchase") {
+    getCodesBtn.disabled =
+      !(selectedService && parseInt(quantitySelect.value, 10) > 0);
+  }
+
+  if (currentMode === "retrieve") {
+    const txn = document.getElementById("txn-id").value.trim();
+    retrieveBtn.disabled = txn.length === 0;
+  }
+}
+
 let selectedService = null;
 
 document.getElementsByName("service").forEach(r => {
@@ -190,18 +303,22 @@ document.getElementsByName("service").forEach(r => {
     selectedService = r.value;
     getCodesBtn.disabled = true;
     quantitySelect.innerHTML = "";
+
     try {
       const res = await fetch(`/available?service=${selectedService}`);
       const data = await res.json();
       const available = data.available;
       const maxQty = Math.min(available, 4);
+
       for (let i = 1; i <= maxQty; i++) {
         const option = document.createElement("option");
         option.value = i;
         option.textContent = i;
         quantitySelect.appendChild(option);
       }
-      getCodesBtn.disabled = maxQty === 0;
+
+      generateCaptcha();
+
     } catch {
       getCodesBtn.disabled = true;
     }
@@ -210,6 +327,11 @@ document.getElementsByName("service").forEach(r => {
 
 getCodesBtn.addEventListener("click", async () => {
   const qty = parseInt(quantitySelect.value, 10);
+  const total = qty * 40;
+
+  const ok = confirm(`Are you sure you want to purchase ${qty} ${selectedService} code(s) for $${total}?`);
+  if (!ok) return; // user cancelled
+  
   const div = document.getElementById("codes-result");
   div.textContent = "Processing...";
   try {
@@ -226,7 +348,7 @@ getCodesBtn.addEventListener("click", async () => {
 
     div.innerHTML = `
       <p><strong>Transaction ID:</strong> ${data.txnId}</p>
-      <p>Gift card codes have been sent to ${USER_EMAIL}, may have gone into your junk mail folder.</p>
+      <p>Gift card codes have been sent from <a href="mailto:no-reply@test-nrw7gyme6xrg2k8e.mlsender.net">no-reply@test-nrw7gyme6xrg2k8e.mlsender.net</a> to ${USER_EMAIL}, may have gone into your junk mail folder.</p>
       <p><strong>Total due:</strong> $${data.total}</p>
       <p>Please make e-transfer payment to <a href="mailto:jeeva86@hotmail.com"><strong>jeeva86@hotmail.com</strong></a>.</p>
     `;

@@ -4,18 +4,10 @@ const session = require("express-session");
 const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
+const axios = require("axios");
 const app = express();
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-
-const Mailgun = require("mailgun.js");
-const formData = require("form-data");
-
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: "api",
-  key: process.env.MAILGUN_API_KEY
-});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -57,36 +49,50 @@ const client = CloudantV1.newInstance({
 const DB_NAME = process.env.CLOUDANT_DB;
 
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
-  const message = `
-Thank you for your purchase!
+  const apiKey = process.env.MAIL_API_KEY;
+  const apiUrl = "https://api.mailersend.com/v1/email";
 
-Transaction ID: ${txnId}
-Service: ${service}
-Quantity: ${codes.length}
-Codes:
+  const fromEmail = "no-reply@" + process.env.MAIL_DOMAIN;
+  const fromName = process.env.MAIL_FROM_NAME || "Gift Cards";
 
-${codes.join("\n")}
-
-Total: $${total}
-
-Please make e-transfer payment to jeeva86@hotmail.com.
-
-Regards,
-
-Jeeva
-`;
+  const body = {
+    from: {
+      email: fromEmail,
+      name: fromName
+    },
+    to: [
+      {
+        email: "jeeva@live.ca"
+        //email: toEmail
+      },
+    ],
+    subject: `Your Purchase Confirmation - ${txnId}`,
+    html: `
+      <p>Thank you for your purchase!</p>
+      <p><strong>Transaction ID:</strong> ${txnId}</p>
+      <p><strong>Service:</strong> ${service}</p>
+      <p><strong>Quantity:</strong> ${codes.length}</p>
+      <p><strong>Codes:</strong><br><br>${codes.join("<br>")}</p>
+      <p><strong>Total:</strong> $${total}</p>
+      <p>Please make e‑transfer payment to jeeva86@hotmail.com</p>
+      <p>Regards,<br><br>Jeeva</p>
+    `,
+  };
 
   try {
-    const result = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
-      from: `Gift Cards <no-reply@${process.env.MAILGUN_DOMAIN}>`,
-      to: toEmail,
-      subject: `Your Purchase Confirmation - ${txnId}`,
-      text: message
+    const resp = await axios.post(apiUrl, body, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
     });
-
-    console.log("Mailgun sent:", result);
+    console.log("MailerSend API response:", resp.data);
   } catch (err) {
-    console.error("Mailgun error:", err);
+    if (err.response) {
+      console.error("MailerSend API error:", err.response.status, err.response.data);
+    } else {
+      console.error("MailerSend request error:", err.message);
+    }
   }
 }
 
