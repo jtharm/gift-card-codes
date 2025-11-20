@@ -112,18 +112,6 @@
 </head>
 <body>
 
-<div id="dev-banner" style="
-  display:none;
-  background:#d62828;
-  color:white;
-  text-align:center;
-  padding:10px;
-  font-weight:bold;
-  font-size:16px;
-">
-  ⚠️ DEVELOPMENT VERSION — For testing only
-</div>
-
 <div class="topbar">
   <span id="userEmail">User</span>
   <button class="logout-btn" onclick="logout()">Logout</button>
@@ -405,7 +393,7 @@ document.getElementById("retrieve-btn").addEventListener("click", async () => {
 // Show banner only when you're on the dev domain
 if (location.hostname === "gift-card-codes-develop.onrender.com") {
   const banner = document.createElement("div");
-  banner.textContent = "⚠️ DEVELOPMENT VERSION — Data may be test-only";
+  banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
 
   Object.assign(banner.style, {
     position: "fixed",
