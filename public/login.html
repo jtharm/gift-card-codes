@@ -111,16 +111,32 @@
     if (error) errorDiv.textContent = error;
     if (email) emailInput.value = email;
 
-  // Show banner only when you're on the dev domain
-  const devDomains = [
-    "localhost",
-    "127.0.0.1",
-    "develop",   // change this to your actual dev domain
-  ];
+    if (location.hostname === "gift-card-codes-develop.onrender.com") {
+      const banner = document.createElement("div");
+      banner.textContent = "⚠️ DEVELOPMENT VERSION — Data may be test-only";
 
-  if (devDomains.includes(location.hostname)) {
-    document.getElementById("dev-banner").style.display = "block";
-  }
+      Object.assign(banner.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        background: "#ffcc00",
+        color: "#000",
+        padding: "10px",
+        fontSize: "15px",
+        fontWeight: "bold",
+        textAlign: "center",
+        zIndex: "99999",
+        borderBottom: "1px solid #000"
+      });
+
+      // Insert BEFORE your topbar
+      const topbar = document.querySelector(".topbar");
+      document.body.insertBefore(banner, topbar);
+
+      // Move the topbar down (not entire body)
+      topbar.style.marginTop = "45px";  // adjust if needed
+    }
   </script>
 </body>
 </html>
