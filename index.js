@@ -48,6 +48,65 @@ const client = CloudantV1.newInstance({
 
 const DB_NAME = process.env.CLOUDANT_DB;
 
+// ----------------------
+// AUTHORIZED USER HELPERS
+// ----------------------
+async function loadAuthorizedUsers() {
+  try {
+    const doc = await client.getDocument({
+      db: DB_NAME,
+      docId: "authorized_users"
+    });
+
+    return doc.result.emails || [];
+  } catch (err) {
+    if (err.status === 404) return []; // No doc exists yet
+    console.error("Error loading authorized users:", err);
+    throw err;
+  }
+}
+
+async function saveAuthorizedUsers(users) {
+  try {
+    // First retrieve revision (_rev) so Cloudant allows update
+    let doc;
+    try {
+      doc = await client.getDocument({
+        db: DB_NAME,
+        docId: "authorized_users"
+      });
+
+      // Update existing doc
+      await client.putDocument({
+        db: DB_NAME,
+        docId: "authorized_users",
+        document: {
+          _id: "authorized_users",
+          _rev: doc.result._rev,
+          emails: users
+        }
+      });
+    } catch (err) {
+      if (err.status === 404) {
+        // Create new doc if not found
+        await client.putDocument({
+          db: DB_NAME,
+          docId: "authorized_users",
+          document: {
+            _id: "authorized_users",
+            emails: users
+          }
+        });
+      } else {
+        throw err;
+      }
+    }
+  } catch (err) {
+    console.error("Error saving authorized users:", err);
+    throw err;
+  }
+}
+
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
   const apiKey = process.env.MAIL_API_KEY;
   const apiUrl = "https://api.mailersend.com/v1/email";
@@ -304,6 +363,62 @@ app.get("/admin/session", (req, res) => {
     return res.json({ email: req.session.adminEmail });
   }
   res.status(401).send("Unauthorized");
+});
+
+app.get("/admin/auth-users", requireAdmin, async (req, res) => {
+  const users = await loadAuthorizedUsers();
+  res.json({ users });
+});
+
+// ADD an authorized user
+app.post("/admin/auth-users/add", requireAdmin, async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "Invalid or missing email" });
+  }
+
+  try {
+    const users = await loadAuthorizedUsers();
+
+    if (users.includes(email)) {
+      return res.status(409).json({ error: "User already authorized" });
+    }
+
+    users.push(email.toLowerCase().trim());
+    await saveAuthorizedUsers(users);
+
+    res.json({ success: true, message: "User added", users });
+  } catch (err) {
+    console.error("Error adding authorized user:", err);
+    res.status(500).json({ error: "Failed to add user" });
+  }
+});
+
+// REMOVE an authorized user
+app.post("/admin/auth-users/remove", requireAdmin, async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "Invalid or missing email" });
+  }
+
+  try {
+    const users = await loadAuthorizedUsers();
+
+    const filtered = users.filter(u => u.toLowerCase().trim() !== email.toLowerCase().trim());
+
+    if (filtered.length === users.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await saveAuthorizedUsers(filtered);
+
+    res.json({ success: true, message: "User removed", users: filtered });
+  } catch (err) {
+    console.error("Error removing authorized user:", err);
+    res.status(500).json({ error: "Failed to remove user" });
+  }
 });
 
 app.post("/admin/add-codes", requireAdmin, async (req, res) => {
