@@ -158,6 +158,22 @@ if (location.hostname === "gift-card-codes-develop.onrender.com") {
     <button class="action-btn" id="reset-codes-btn">Reset Codes</button>
   </div>
 
+  <!-- Transaction History Table -->
+  <div class="section" id="txn-history-section" style="display:none;">
+    <h3>Transaction History</h3>
+    <table id="txn-table" border="1" style="width:100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Date</th>
+          <th>Email</th>
+          <th>Qty</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
   <div id="status-codes"></div>
 </div>
 
@@ -187,6 +203,34 @@ tabs.forEach((tab, i) => {
 async function logout() {
   await fetch("/logout", { method: "POST" });
   window.location.href = "/admin-login.html";
+}
+
+// Fetch transaction history for selected service
+async function loadTransactions(serviceDocId) {
+  const section = document.getElementById("txn-history-section");
+  const tbody = document.querySelector("#txn-table tbody");
+  tbody.innerHTML = "";
+  section.style.display = "block";
+
+  try {
+    const res = await fetch(`/admin/service-transactions?service=${serviceDocId}`, { credentials: "same-origin" });
+    if (!res.ok) throw new Error("Failed to fetch transactions");
+    const data = await res.json();
+
+    data.transactions.forEach(txn => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${txn.txnId}</td>
+        <td>${new Date(txn.date).toLocaleString()}</td>
+        <td>${txn.email}</td>
+        <td>${txn.qty}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="4">Error loading transactions</td></tr>`;
+  }
 }
 
 // --- User Management ---

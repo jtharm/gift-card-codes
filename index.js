@@ -498,4 +498,34 @@ app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   }
 });
 
+app.get("/admin/service-transactions", requireAdmin, async (req, res) => {
+  const { service } = req.query;
+  if (!service || !["codes-uber", "codes-doordash"].includes(service)) {
+    return res.status(400).json({ error: "Invalid service" });
+  }
+
+  try {
+    const docResp = await client.getDocument({ db: DB_NAME, docId: service });
+    const codesDoc = docResp.result;
+
+    const usedCodes = codesDoc.codes.filter(c => c.used && c.txnId);
+
+    // Aggregate by txnId
+    const txnMap = {};
+    usedCodes.forEach(c => {
+      if (!txnMap[c.txnId]) {
+        txnMap[c.txnId] = { txnId: c.txnId, date: c.usedAt, email: c.usedBy, qty: 0 };
+      }
+      txnMap[c.txnId].qty += 1;
+    });
+
+    const transactions = Object.values(txnMap).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    res.json({ transactions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
 app.listen(3000, () => console.log("Server running on port 3000"));
