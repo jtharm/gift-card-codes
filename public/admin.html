@@ -1,240 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f7f7;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
 
-    header {
-      background: #333;
-      color: #fff;
-      padding: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 16px;
-    }
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  background: #f5f5f7;
+}
 
-    .container {
-      padding: 20px;
-      max-width: 900px;
-      margin: auto;
-    }
+/* Topbar */
+.topbar {
+  background: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+}
 
-    h2 {
-      margin-top: 30px;
-    }
+.topbar span { font-size: 18px; font-weight: 600; }
+.logout-btn {
+  padding: 10px 14px;
+  background: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
 
-    .section {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+/* Tabs */
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
 
-    .tabs {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
+.tab-buttons button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: #e0e0e0;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+}
 
-    .tab {
-      padding: 10px 16px;
-      background: #ddd;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+.tab-buttons button.active {
+  background: #007aff;
+  color: white;
+}
 
-    .tab.active {
-      background: #444;
-      color: #fff;
-    }
+.tab-content {
+  max-width: 500px;
+  margin: 20px auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 20px;
+  display: none;
+}
 
-    .hidden {
-      display: none;
-    }
+.tab-content.active { display: block; }
 
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      background: #007bff;
-      color: #fff;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+.section { margin-bottom: 20px; }
+.section label { display: block; margin: 8px 0; }
+textarea {
+  width: 100%; height: 100px; padding: 10px; box-sizing: border-box;
+  border-radius: 8px; border: 1px solid #ccc; resize: vertical;
+}
+button.action-btn {
+  width: 100%; padding: 14px; margin-top: 10px;
+  border: none; border-radius: 12px; font-size: 16px;
+  background: #007aff; color: white; cursor: pointer;
+}
+button.action-btn:active { background: #005fcc; }
 
-    button.danger {
-      background: #c62828;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 6px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    li {
-      padding: 8px 0;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-    }
-  </style>
+#status { text-align: center; margin-top: 10px; font-size: 15px; white-space: pre-line; }
+</style>
 </head>
 <body>
-  <header>
-    <div>Admin Panel</div>
-    <div id="currentUser">Logged in as: admin@example.com</div>
-  </header>
 
-  <div class="container">
-    <h1>Admin Controls</h1>
+<div class="topbar">
+  <span id="admin-email">Admin</span>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
 
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('userMgmt')">User Management</div>
-      <div class="tab" onclick="switchTab('codeMgmt')">Code Management</div>
-    </div>
+<!-- Dev banner -->
+<script>
+if (location.hostname === "gift-card-codes-develop.onrender.com") {
+  const banner = document.createElement("div");
+  banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
+  Object.assign(banner.style, {
+    position: "fixed", top: "0", left: "0", width: "100%",
+    background: "#ff0000", color: "#000", padding: "10px",
+    fontSize: "15px", fontWeight: "bold", textAlign: "center",
+    zIndex: "99999", borderBottom: "1px solid #000"
+  });
+  const topbar = document.querySelector(".topbar");
+  document.body.insertBefore(banner, topbar);
+  topbar.style.marginTop = "45px";
+}
+</script>
 
-    <!-- User Management -->
-    <div id="userMgmt" class="section">
-      <h2>User Management</h2>
+<!-- Tabs -->
+<div class="tab-buttons">
+  <button id="tab-users" class="active">User Management</button>
+  <button id="tab-codes">Code Management</button>
+</div>
 
-      <h3>List Users</h3>
-      <button onclick="listUsers()">Refresh</button>
-      <ul id="userList"></ul>
+<!-- User Management -->
+<div id="content-users" class="tab-content active">
+  <div class="section">
+    <button class="action-btn" id="list-users-btn">List Authorized Users</button>
+    <pre id="list-users-output"></pre>
+  </div>
+  <div class="section">
+    <label>Add User (email):</label>
+    <input type="email" id="add-user-email">
+    <button class="action-btn" id="add-user-btn">Add User</button>
+  </div>
+  <div class="section">
+    <label>Remove User (email):</label>
+    <input type="email" id="remove-user-email">
+    <button class="action-btn" id="remove-user-btn">Remove User</button>
+  </div>
+  <div id="status-users" class="section"></div>
+</div>
 
-      <h3>Add User</h3>
-      <input type="email" id="addUserEmail" placeholder="Enter user email" />
-      <button onclick="addUser()">Add User</button>
-
-      <h3>Remove User</h3>
-      <input type="email" id="removeUserEmail" placeholder="Enter email to remove" />
-      <button class="danger" onclick="removeUser()">Remove User</button>
-    </div>
-
-    <!-- Code Management -->
-    <div id="codeMgmt" class="section hidden">
-      <h2>Code Management</h2>
-
-      <h3>Select a service</h3>
-      <select id="serviceSelect">
-        <option value="">-- Select --</option>
-        <option>DoorDash</option>
-        <option>UberEats</option>
-        <option>Amazon</option>
-      </select>
-
-      <div id="codeOptions" class="hidden">
-        <h3>Reset All Codes</h3>
-        <button class="danger" onclick="resetCodes()">Reset Codes</button>
-
-        <h3>Add Codes</h3>
-        <textarea id="bulkCodes" rows="5" placeholder="Paste codes here, one per line"></textarea>
-        <button onclick="addCodes()">Upload Codes</button>
-      </div>
-    </div>
+<!-- Code Management -->
+<div id="content-codes" class="tab-content">
+  <div class="section">
+    <label>Select Service:</label>
+    <label><input type="radio" name="service" value="Uber"> Uber</label>
+    <label><input type="radio" name="service" value="DoorDash"> DoorDash</label>
   </div>
 
-  <script>
-    // Load admin session
-    async function loadAdmin() {
-      const res = await fetch("/admin/session", { credentials: "same-origin" });
-      if (!res.ok) {
-        // Not logged in → redirect to login page
-        window.location.href = "/admin-login.html";
-        return;
-      }
+  <div class="section">
+    <button class="action-btn" id="inventory-btn">Inventory</button>
+    <div id="inventory-output"></div>
+  </div>
 
-      const data = await res.json();
-      document.getElementById("admin-email").textContent = data.email;
-    }
+  <div class="section">
+    <label>Add new codes (one per line):</label>
+    <textarea id="new-codes"></textarea>
+    <button class="action-btn" id="add-codes-btn">Add Codes</button>
+  </div>
 
-    loadAdmin();
+  <div class="section">
+    <button class="action-btn" id="reset-codes-btn">Reset Codes</button>
+  </div>
 
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+  <div id="status-codes"></div>
+</div>
 
-      if (tab === 'userMgmt') {
-        document.querySelector('.tab:nth-child(1)').classList.add('active');
-        document.getElementById('userMgmt').classList.remove('hidden');
-      } else {
-        document.querySelector('.tab:nth-child(2)').classList.add('active');
-        document.getElementById('codeMgmt').classList.remove('hidden');
-      }
-    }
+<script>
+// --- Admin session ---
+async function loadAdmin() {
+  const res = await fetch("/admin/session");
+  if (!res.ok) return (window.location.href = "/admin-login.html");
+  const data = await res.json();
+  document.getElementById("admin-email").textContent = data.email;
+}
+loadAdmin();
 
-    document.getElementById('serviceSelect').addEventListener('change', function () {
-      document.getElementById('codeOptions').classList.toggle('hidden', !this.value);
+// --- Tabs ---
+const tabs = document.querySelectorAll(".tab-buttons button");
+const contents = document.querySelectorAll(".tab-content");
+tabs.forEach((tab, i) => {
+  tab.addEventListener("click", () => {
+    tabs.forEach(t => t.classList.remove("active"));
+    contents.forEach(c => c.classList.remove("active"));
+    tab.classList.add("active");
+    contents[i].classList.add("active");
+  });
+});
+
+// --- Logout ---
+async function logout() {
+  await fetch("/logout", { method: "POST" });
+  window.location.href = "/admin-login.html";
+}
+
+// --- User Management ---
+document.getElementById("list-users-btn").addEventListener("click", async () => {
+  const out = document.getElementById("list-users-output");
+  out.textContent = "Loading...";
+  try {
+    const res = await fetch("/admin/auth-users");
+    const data = await res.json();
+    out.textContent = data.users.join("\n") || "(none)";
+  } catch (err) { out.textContent = "Error fetching users"; }
+});
+
+document.getElementById("add-user-btn").addEventListener("click", async () => {
+  const email = document.getElementById("add-user-email").value.trim();
+  const status = document.getElementById("status-users");
+  if (!email) return alert("Enter an email");
+  status.textContent = "Adding...";
+  try {
+    const res = await fetch("/admin/auth-users/add", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ email })
     });
+    const data = await res.json();
+    if (res.ok) { status.textContent = "User added"; document.getElementById("add-user-email").value = ""; }
+    else status.textContent = data.error || "Error";
+  } catch (err) { status.textContent = "Error adding user"; }
+});
 
-    function listUsers() {
-      console.log("Listing users...");
+document.getElementById("remove-user-btn").addEventListener("click", async () => {
+  const email = document.getElementById("remove-user-email").value.trim();
+  const status = document.getElementById("status-users");
+  if (!email) return alert("Enter an email");
+  status.textContent = "Removing...";
+  try {
+    const res = await fetch("/admin/auth-users/remove", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (res.ok) { status.textContent = "User removed"; document.getElementById("remove-user-email").value = ""; }
+    else status.textContent = data.error || "Error";
+  } catch (err) { status.textContent = "Error removing user"; }
+});
+
+// --- Code Management ---
+function getSelectedService() {
+  const radio = document.querySelector('input[name="service"]:checked');
+  return radio ? radio.value : null;
+}
+
+document.getElementById("inventory-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status-codes");
+  if (!serviceRadio) return alert("Select a service first");
+
+  const service = serviceRadio.value;
+  status.textContent = "Fetching inventory...";
+
+  try {
+    const res = await fetch(`/available?service=${service}`);
+    const data = await res.json();
+    if (res.ok) {
+      status.textContent = `${service} Codes: ${data.available} available out of ${data.total} total`;
+    } else {
+      status.textContent = data.error || "Error fetching inventory";
     }
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error fetching inventory";
+  }
+});
 
-    function addUser() {
-      const email = document.getElementById('addUserEmail').value;
-      console.log("Adding user:", email);
+document.getElementById("add-codes-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status-codes");
+  if (!serviceRadio) return alert("Select a service");
+  const docId = `codes-${serviceRadio.value.toLowerCase()}`;
+  const codesText = document.getElementById("new-codes").value.trim();
+  if (!codesText) return alert("Enter at least one code");
+  const codesArray = codesText.split("\n").map(c => c.trim()).filter(c=>c);
+  status.textContent = "Adding codes...";
+  try {
+    const res = await fetch("/admin/add-codes", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ docId, codes: codesArray })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      let msg = `Added ${data.added.length} codes.`;
+      if (data.skippedCount > 0) msg += ` Skipped ${data.skippedCount}: ${data.skipped.join(", ")}`;
+      status.textContent = msg;
+      document.getElementById("new-codes").value = "";
+    } else status.textContent = data.error || "Error adding codes";
+  } catch (err) { status.textContent = "Error adding codes"; }
+});
+
+document.getElementById("reset-codes-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status-codes");
+  if (!serviceRadio) return alert("Select a service");
+  if (!confirm(`Reset all ${serviceRadio.value} codes?`)) return;
+
+  const docId = `codes-${serviceRadio.value.toLowerCase()}`;
+  status.textContent = "Resetting...";
+
+  try {
+    // Only reset the selected service
+    const res = await fetch("/admin/reset-codes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ docId })
+    });
+    if (res.ok) status.textContent = `${serviceRadio.value} codes reset successfully.`;
+    else {
+      const data = await res.json();
+      status.textContent = data.error || "Error resetting codes";
     }
-
-    function removeUser() {
-      const email = document.getElementById('removeUserEmail').value;
-      console.log("Removing user:", email);
-    }
-
-    function resetCodes() {
-      console.log("Resetting codes for service");
-    }
-
-    function addCodes() {
-      const codes = document.getElementById('bulkCodes').value;
-      console.log("Adding codes:\n", codes);
-    }
-
-    // Show development banner only on the dev domain
-    if (location.hostname === "gift-card-codes-develop.onrender.com") {
-      const banner = document.createElement("div");
-      banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
-
-      Object.assign(banner.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100%",
-        background: "#ff0000",
-        color: "#000",
-        padding: "10px",
-        fontSize: "15px",
-        fontWeight: "600",
-        textAlign: "center",
-        zIndex: "99999",
-        borderBottom: "2px solid #000"
-      });
-
-      document.body.prepend(banner);
-
-      // Push the top bar down so it doesn’t get covered
-      const topbar = document.querySelector(".topbar");
-      if (topbar) topbar.style.marginTop = "45px";
-    }
-  </script>
+  } catch (err) {
+    status.textContent = "Error resetting codes";
+  }
+});
+</script>
 </body>
 </html>

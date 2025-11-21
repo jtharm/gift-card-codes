@@ -350,11 +350,14 @@ app.get("/available", async (req, res) => {
     const docId = service === "Uber" ? "codes-uber" : "codes-doordash";
     const codesResponse = await client.getDocument({ db: DB_NAME, docId });
     const codesDoc = codesResponse.result;
+
     const available = codesDoc.codes.filter(c => !c.used).length;
-    return res.json({ available });
+    const total = codesDoc.codes.length;
+
+    return res.json({ available, total });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ available: 0 });
+    return res.status(500).json({ available: 0, total: 0 });
   }
 });
 
@@ -469,7 +472,7 @@ app.post("/admin/add-codes", requireAdmin, async (req, res) => {
 // Admin reset codes
 app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   try {
-    const docs = ["codes-uber", "codes-doordash"];
+    const docs = req.body.docId ? [req.body.docId] : ["codes-uber", "codes-doordash"];
 
     for (const docId of docs) {
       const response = await client.getDocument({ db: DB_NAME, docId });
@@ -487,8 +490,8 @@ app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
       await client.putDocument({ db: DB_NAME, docId, document: doc });
     }
 
-    console.log(`[${new Date().toISOString()}] Admin reset all codes`);
-    return res.json({ message: "All codes have been reset" });
+    console.log(`[${new Date().toISOString()}] Admin reset codes for ${docs.join(", ")}`);
+    return res.json({ message: "Codes reset successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Error resetting codes" });
