@@ -159,8 +159,8 @@ if (location.hostname === "gift-card-codes-develop.onrender.com") {
   </div>
 
   <!-- Transaction History Table -->
-  <div class="section" id="txn-history-section" style="display:none;">
-    <h3>Transaction History</h3>
+  <div class="section">
+    <button class="action-btn" id="txn-history-btn">Transaction History</button>
     <table id="txn-table" border="1" style="width:100%; border-collapse: collapse;">
       <thead>
         <tr>
@@ -353,6 +353,14 @@ document.getElementById("reset-codes-btn").addEventListener("click", async () =>
     status.textContent = "Error resetting codes";
   }
 });
+
+document.getElementById("txn-history-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  if (!serviceRadio) return alert("Please select a service first.");
+  const serviceDocId = serviceRadio.value; // "codes-uber" or "codes-doordash"
+  await loadTransactions(serviceDocId);
+});
+
 </script>
 </body>
 </html>
