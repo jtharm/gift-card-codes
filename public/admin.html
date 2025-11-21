@@ -154,6 +154,21 @@
   </div>
 
   <script>
+    // Load admin session
+    async function loadAdmin() {
+      const res = await fetch("/admin/session", { credentials: "same-origin" });
+      if (!res.ok) {
+        // Not logged in → redirect to login page
+        window.location.href = "/admin-login.html";
+        return;
+      }
+
+      const data = await res.json();
+      document.getElementById("admin-email").textContent = data.email;
+    }
+
+    loadAdmin();
+
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
