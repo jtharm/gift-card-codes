@@ -139,8 +139,8 @@ if (location.hostname === "gift-card-codes-develop.onrender.com") {
 <div id="content-codes" class="tab-content">
   <div class="section">
     <label>Select Service:</label>
-    <label><input type="radio" name="service" value="codes-uber">
-    <label><input type="radio" name="service" value="codes-doordash">
+    <label><input type="radio" name="service" value="codes-uber">Uber</label>
+    <label><input type="radio" name="service" value="codes-doordash">DoorDash</label>
   </div>
 
   <div class="section">
@@ -213,7 +213,7 @@ async function loadTransactions(serviceDocId) {
   section.style.display = "block";
 
   try {
-    const res = await fetch(`/admin/service-transactions?service=${serviceDocId}`, { credentials: "same-origin" });
+    const res = await fetch(`/admin/transactions?service=${serviceDocId}`, { credentials: "same-origin" });
     if (!res.ok) throw new Error("Failed to fetch transactions");
     const data = await res.json();
 
