@@ -121,8 +121,7 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
     },
     to: [
       {
-        email: "jeeva@live.ca"
-        //email: toEmail
+        email: toEmail
       },
     ],
     subject: `Your Purchase Confirmation - ${txnId}`,
