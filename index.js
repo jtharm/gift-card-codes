@@ -380,4 +380,19 @@ app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   }
 });
 
+app.get("/admin/transactions", ensureLoggedIn, async (req, res) => {
+  const { service } = req.query;
+
+  const query = `
+      SELECT txn_id, date, email, qty
+      FROM transactions
+      WHERE service = ?
+      ORDER BY date DESC
+  `;
+
+  const rows = await db.all(query, [service]);
+
+  res.json({ transactions: rows });
+});
+
 app.listen(3000, () => console.log("Server running on port 3000"));
