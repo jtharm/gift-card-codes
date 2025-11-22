@@ -1,99 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel</title>
 
 <style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f5f5f7;
-    margin: 0;
-    padding: 0;
-  }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  background: #f5f5f7;
+}
 
-  .topbar {
-    background: white;
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-  }
+/* Topbar */
+.topbar {
+  background: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+}
 
-  .topbar span {
-    font-size: 18px;
-    font-weight: 600;
-  }
+.topbar span { font-size: 18px; font-weight: 600; }
+.logout-btn {
+  padding: 10px 14px;
+  background: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
 
-  .logout-btn {
-    padding: 10px 14px;
-    background: #ff3b30;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-  }
+/* Tabs */
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
 
-  .container {
-    max-width: 500px;
-    margin: 25px auto;
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
+.tab-buttons button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: #e0e0e0;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+}
 
-  h2 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
+.tab-buttons button.active {
+  background: #007aff;
+  color: white;
+}
 
-  .section {
-    margin-bottom: 25px;
-    padding: 15px;
-    border-radius: 12px;
-    background: #f9f9f9;
-  }
+.tab-content {
+  max-width: 500px;
+  margin: 20px auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 20px;
+  display: none;
+}
 
-  .section label {
-    display: block;
-    margin: 8px 0;
-  }
+.tab-content.active { display: block; }
 
-  textarea {
-    width: 100%;
-    height: 100px;
-    padding: 10px;
-    margin-top: 5px;
-    box-sizing: border-box;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    resize: vertical;
-  }
+.section { margin-bottom: 20px; }
+.section label { display: block; margin: 8px 0; }
+textarea {
+  width: 100%; height: 100px; padding: 10px; box-sizing: border-box;
+  border-radius: 8px; border: 1px solid #ccc; resize: vertical;
+}
+button.action-btn {
+  width: 100%; padding: 14px; margin-top: 10px;
+  border: none; border-radius: 12px; font-size: 16px;
+  background: #007aff; color: white; cursor: pointer;
+}
+button.action-btn:active { background: #005fcc; }
 
-  button.action-btn {
-    width: 100%;
-    padding: 16px;
-    background: #007aff;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 17px;
-    margin-top: 10px;
-  }
-
-  button.action-btn:active {
-    background: #005fcc;
-  }
-
-  #status {
-    text-align: center;
-    margin-top: 10px;
-    font-size: 15px;
-  }
+#status { text-align: center; margin-top: 10px; font-size: 15px; white-space: pre-line; }
 </style>
 </head>
 <body>
@@ -103,92 +93,274 @@
   <button class="logout-btn" onclick="logout()">Logout</button>
 </div>
 
-<div class="container">
-  <h2>Admin Tools</h2>
+<!-- Dev banner -->
+<script>
+if (location.hostname === "gift-card-codes-develop.onrender.com") {
+  const banner = document.createElement("div");
+  banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
+  Object.assign(banner.style, {
+    position: "fixed", top: "0", left: "0", width: "100%",
+    background: "#ff0000", color: "#000", padding: "10px",
+    fontSize: "15px", fontWeight: "bold", textAlign: "center",
+    zIndex: "99999", borderBottom: "1px solid #000"
+  });
+  const topbar = document.querySelector(".topbar");
+  document.body.insertBefore(banner, topbar);
+  topbar.style.marginTop = "45px";
+}
+</script>
 
-  <!-- Reset all codes -->
+<!-- Tabs -->
+<div class="tab-buttons">
+  <button id="tab-users" class="active">User Management</button>
+  <button id="tab-codes">Code Management</button>
+</div>
+
+<!-- User Management -->
+<div id="content-users" class="tab-content active">
   <div class="section">
-    <button class="action-btn" id="reset-btn">Reset ALL Codes</button>
+    <button class="action-btn" id="list-users-btn">List Authorized Users</button>
+    <pre id="list-users-output"></pre>
+  </div>
+  <div class="section">
+    <label>Add User (email):</label>
+    <input type="email" id="add-user-email">
+    <button class="action-btn" id="add-user-btn">Add User</button>
+  </div>
+  <div class="section">
+    <label>Remove User (email):</label>
+    <input type="email" id="remove-user-email">
+    <button class="action-btn" id="remove-user-btn">Remove User</button>
+  </div>
+  <div id="status-users" class="section"></div>
+</div>
+
+<!-- Code Management -->
+<div id="content-codes" class="tab-content">
+  <div class="section">
+    <label>Select Service:</label>
+    <label><input type="radio" name="service" value="codes-uber">Uber</label>
+    <label><input type="radio" name="service" value="codes-doordash">DoorDash</label>
   </div>
 
-  <!-- Add new codes -->
   <div class="section">
-    <label><input type="radio" name="service" value="codes-uber"> Uber</label>
-    <label><input type="radio" name="service" value="codes-doordash"> DoorDash</label>
+    <button class="action-btn" id="inventory-btn">Inventory</button>
+    <div id="inventory-output"></div>
+  </div>
 
+  <div class="section">
     <label>Add new codes (one per line):</label>
     <textarea id="new-codes"></textarea>
-
     <button class="action-btn" id="add-codes-btn">Add Codes</button>
   </div>
 
-  <div id="status"></div>
+  <div class="section">
+    <button class="action-btn" id="reset-codes-btn">Reset Codes</button>
+  </div>
+
+  <!-- Transaction History Table -->
+  <div class="section" id="txn-history-section">
+    <button class="action-btn" id="txn-history-btn">Transaction History</button>
+    <table id="txn-table" border="1" style="width:100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Date</th>
+          <th>Email</th>
+          <th>Qty</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="status-codes"></div>
 </div>
 
 <script>
-// Load admin session
+// --- Admin session ---
 async function loadAdmin() {
   const res = await fetch("/admin/session");
   if (!res.ok) return (window.location.href = "/admin-login.html");
-
   const data = await res.json();
   document.getElementById("admin-email").textContent = data.email;
 }
 loadAdmin();
 
-// Reset all codes
-document.getElementById("reset-btn").addEventListener("click", async () => {
-  if (!confirm("Are you sure you want to reset ALL codes?")) return;
-  const status = document.getElementById("status");
-  status.textContent = "Processing...";
-  const res = await fetch("/admin/reset-codes", { method: "POST", credentials: "same-origin" });
-  if (res.ok) status.textContent = "All codes reset successfully.";
-  else status.textContent = "Error resetting codes.";
+// --- Tabs ---
+const tabs = document.querySelectorAll(".tab-buttons button");
+const contents = document.querySelectorAll(".tab-content");
+tabs.forEach((tab, i) => {
+  tab.addEventListener("click", () => {
+    tabs.forEach(t => t.classList.remove("active"));
+    contents.forEach(c => c.classList.remove("active"));
+    tab.classList.add("active");
+    contents[i].classList.add("active");
+  });
 });
 
-// Add new codes
-document.getElementById("add-codes-btn").addEventListener("click", async () => {
-  const serviceRadio = document.querySelector('input[name="service"]:checked');
-  const status = document.getElementById("status");
-  if (!serviceRadio) return alert("Please select a service first.");
-  const docId = serviceRadio.value;
-
-  const codesText = document.getElementById("new-codes").value.trim();
-  if (!codesText) return alert("Please enter at least one code.");
-
-  const codesArray = codesText.split("\n").map(c => c.trim()).filter(c => c);
-
-  status.textContent = "Adding codes...";
-  try {
-    const res = await fetch("/admin/add-codes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ docId, codes: codesArray })
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      let msg = `Successfully added ${data.added.length} codes.`;
-      if (data.skippedCount > 0) {
-        msg += ` Skipped ${data.skippedCount} duplicates:\n${data.skipped.join(", ")}`;
-      }
-      status.textContent = msg;
-      document.getElementById("new-codes").value = "";
-    } else {
-      status.textContent = data.error || "Error adding codes.";
-    }
-  } catch (err) {
-    console.error(err);
-    status.textContent = "Unknown error adding codes.";
-  }
-});
-
-// Logout
+// --- Logout ---
 async function logout() {
   await fetch("/logout", { method: "POST" });
   window.location.href = "/admin-login.html";
 }
-</script>
 
+// Fetch transaction history for selected service
+async function loadTransactions(serviceDocId) {
+  const section = document.getElementById("txn-history-section");
+  const tbody = document.querySelector("#txn-table tbody");
+  tbody.innerHTML = "";
+  section.style.display = "block";
+
+  try {
+    const res = await fetch(`/admin/transactions?service=${serviceDocId}`, { credentials: "same-origin" });
+    if (!res.ok) throw new Error("Failed to fetch transactions");
+    const data = await res.json();
+
+    data.transactions.forEach(txn => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${txn.txnId}</td>
+        <td>${new Date(txn.date).toLocaleString()}</td>
+        <td>${txn.email}</td>
+        <td>${txn.qty}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="4">Error loading transactions</td></tr>`;
+  }
+}
+
+// --- User Management ---
+document.getElementById("list-users-btn").addEventListener("click", async () => {
+  const out = document.getElementById("list-users-output");
+  out.textContent = "Loading...";
+  try {
+    const res = await fetch("/admin/auth-users");
+    const data = await res.json();
+    out.textContent = data.users.join("\n") || "(none)";
+  } catch (err) { out.textContent = "Error fetching users"; }
+});
+
+document.getElementById("add-user-btn").addEventListener("click", async () => {
+  const email = document.getElementById("add-user-email").value.trim();
+  const status = document.getElementById("status-users");
+  if (!email) return alert("Enter an email");
+  status.textContent = "Adding...";
+  try {
+    const res = await fetch("/admin/auth-users/add", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (res.ok) { status.textContent = "User added"; document.getElementById("add-user-email").value = ""; }
+    else status.textContent = data.error || "Error";
+  } catch (err) { status.textContent = "Error adding user"; }
+});
+
+document.getElementById("remove-user-btn").addEventListener("click", async () => {
+  const email = document.getElementById("remove-user-email").value.trim();
+  const status = document.getElementById("status-users");
+  if (!email) return alert("Enter an email");
+  status.textContent = "Removing...";
+  try {
+    const res = await fetch("/admin/auth-users/remove", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (res.ok) { status.textContent = "User removed"; document.getElementById("remove-user-email").value = ""; }
+    else status.textContent = data.error || "Error";
+  } catch (err) { status.textContent = "Error removing user"; }
+});
+
+// --- Code Management ---
+function getSelectedService() {
+  const radio = document.querySelector('input[name="service"]:checked');
+  return radio ? radio.value : null;
+}
+
+document.getElementById("inventory-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status-codes");
+  if (!serviceRadio) return alert("Select a service first");
+
+  const service = serviceRadio.value;
+  status.textContent = "Fetching inventory...";
+
+  try {
+    const res = await fetch(`/available?service=${service}`);
+    const data = await res.json();
+    if (res.ok) {
+      status.textContent = `${service} Codes: ${data.available} available out of ${data.total} total`;
+    } else {
+      status.textContent = data.error || "Error fetching inventory";
+    }
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error fetching inventory";
+  }
+});
+
+document.getElementById("add-codes-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status-codes");
+  if (!serviceRadio) return alert("Select a service");
+  const docId = `codes-${serviceRadio.value.toLowerCase()}`;
+  const codesText = document.getElementById("new-codes").value.trim();
+  if (!codesText) return alert("Enter at least one code");
+  const codesArray = codesText.split("\n").map(c => c.trim()).filter(c=>c);
+  status.textContent = "Adding codes...";
+  try {
+    const res = await fetch("/admin/add-codes", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ docId, codes: codesArray })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      let msg = `Added ${data.added.length} codes.`;
+      if (data.skippedCount > 0) msg += ` Skipped ${data.skippedCount}: ${data.skipped.join(", ")}`;
+      status.textContent = msg;
+      document.getElementById("new-codes").value = "";
+    } else status.textContent = data.error || "Error adding codes";
+  } catch (err) { status.textContent = "Error adding codes"; }
+});
+
+document.getElementById("reset-codes-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  const status = document.getElementById("status-codes");
+  if (!serviceRadio) return alert("Select a service");
+  if (!confirm(`Reset all ${serviceRadio.value} codes?`)) return;
+
+  const docId = `codes-${serviceRadio.value.toLowerCase()}`;
+  status.textContent = "Resetting...";
+
+  try {
+    // Only reset the selected service
+    const res = await fetch("/admin/reset-codes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ docId })
+    });
+    if (res.ok) status.textContent = `${serviceRadio.value} codes reset successfully.`;
+    else {
+      const data = await res.json();
+      status.textContent = data.error || "Error resetting codes";
+    }
+  } catch (err) {
+    status.textContent = "Error resetting codes";
+  }
+});
+
+document.getElementById("txn-history-btn").addEventListener("click", async () => {
+  const serviceRadio = document.querySelector('input[name="service"]:checked');
+  if (!serviceRadio) return alert("Please select a service first.");
+  const serviceDocId = serviceRadio.value; // "codes-uber" or "codes-doordash"
+  await loadTransactions(serviceDocId);
+});
+
+</script>
 </body>
 </html>

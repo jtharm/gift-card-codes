@@ -48,6 +48,65 @@ const client = CloudantV1.newInstance({
 
 const DB_NAME = process.env.CLOUDANT_DB;
 
+// ----------------------
+// AUTHORIZED USER HELPERS
+// ----------------------
+async function loadAuthorizedUsers() {
+  try {
+    const doc = await client.getDocument({
+      db: DB_NAME,
+      docId: "authorized_users"
+    });
+
+    return doc.result.emails || [];
+  } catch (err) {
+    if (err.status === 404) return []; // No doc exists yet
+    console.error("Error loading authorized users:", err);
+    throw err;
+  }
+}
+
+async function saveAuthorizedUsers(users) {
+  try {
+    // First retrieve revision (_rev) so Cloudant allows update
+    let doc;
+    try {
+      doc = await client.getDocument({
+        db: DB_NAME,
+        docId: "authorized_users"
+      });
+
+      // Update existing doc
+      await client.putDocument({
+        db: DB_NAME,
+        docId: "authorized_users",
+        document: {
+          _id: "authorized_users",
+          _rev: doc.result._rev,
+          emails: users
+        }
+      });
+    } catch (err) {
+      if (err.status === 404) {
+        // Create new doc if not found
+        await client.putDocument({
+          db: DB_NAME,
+          docId: "authorized_users",
+          document: {
+            _id: "authorized_users",
+            emails: users
+          }
+        });
+      } else {
+        throw err;
+      }
+    }
+  } catch (err) {
+    console.error("Error saving authorized users:", err);
+    throw err;
+  }
+}
+
 async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
   const apiKey = process.env.MAIL_API_KEY;
   const apiUrl = "https://api.mailersend.com/v1/email";
@@ -62,8 +121,7 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
     },
     to: [
       {
-        email: "jeeva@live.ca"
-        //email: toEmail
+        email: toEmail
       },
     ],
     subject: `Your Purchase Confirmation - ${txnId}`,
@@ -291,11 +349,14 @@ app.get("/available", async (req, res) => {
     const docId = service === "Uber" ? "codes-uber" : "codes-doordash";
     const codesResponse = await client.getDocument({ db: DB_NAME, docId });
     const codesDoc = codesResponse.result;
+
     const available = codesDoc.codes.filter(c => !c.used).length;
-    return res.json({ available });
+    const total = codesDoc.codes.length;
+
+    return res.json({ available, total });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ available: 0 });
+    return res.status(500).json({ available: 0, total: 0 });
   }
 });
 
@@ -304,6 +365,62 @@ app.get("/admin/session", (req, res) => {
     return res.json({ email: req.session.adminEmail });
   }
   res.status(401).send("Unauthorized");
+});
+
+app.get("/admin/auth-users", requireAdmin, async (req, res) => {
+  const users = await loadAuthorizedUsers();
+  res.json({ users });
+});
+
+// ADD an authorized user
+app.post("/admin/auth-users/add", requireAdmin, async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "Invalid or missing email" });
+  }
+
+  try {
+    const users = await loadAuthorizedUsers();
+
+    if (users.includes(email)) {
+      return res.status(409).json({ error: "User already authorized" });
+    }
+
+    users.push(email.toLowerCase().trim());
+    await saveAuthorizedUsers(users);
+
+    res.json({ success: true, message: "User added", users });
+  } catch (err) {
+    console.error("Error adding authorized user:", err);
+    res.status(500).json({ error: "Failed to add user" });
+  }
+});
+
+// REMOVE an authorized user
+app.post("/admin/auth-users/remove", requireAdmin, async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "Invalid or missing email" });
+  }
+
+  try {
+    const users = await loadAuthorizedUsers();
+
+    const filtered = users.filter(u => u.toLowerCase().trim() !== email.toLowerCase().trim());
+
+    if (filtered.length === users.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await saveAuthorizedUsers(filtered);
+
+    res.json({ success: true, message: "User removed", users: filtered });
+  } catch (err) {
+    console.error("Error removing authorized user:", err);
+    res.status(500).json({ error: "Failed to remove user" });
+  }
 });
 
 app.post("/admin/add-codes", requireAdmin, async (req, res) => {
@@ -354,7 +471,7 @@ app.post("/admin/add-codes", requireAdmin, async (req, res) => {
 // Admin reset codes
 app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   try {
-    const docs = ["codes-uber", "codes-doordash"];
+    const docs = req.body.docId ? [req.body.docId] : ["codes-uber", "codes-doordash"];
 
     for (const docId of docs) {
       const response = await client.getDocument({ db: DB_NAME, docId });
@@ -372,27 +489,42 @@ app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
       await client.putDocument({ db: DB_NAME, docId, document: doc });
     }
 
-    console.log(`[${new Date().toISOString()}] Admin reset all codes`);
-    return res.json({ message: "All codes have been reset" });
+    console.log(`[${new Date().toISOString()}] Admin reset codes for ${docs.join(", ")}`);
+    return res.json({ message: "Codes reset successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Error resetting codes" });
   }
 });
 
-app.get("/admin/transactions", ensureLoggedIn, async (req, res) => {
+app.get("/admin/transactions", requireAdmin, async (req, res) => {
   const { service } = req.query;
+  if (!service || !["codes-uber", "codes-doordash"].includes(service)) {
+    return res.status(400).json({ error: "Invalid service" });
+  }
 
-  const query = `
-      SELECT txn_id, date, email, qty
-      FROM transactions
-      WHERE service = ?
-      ORDER BY date DESC
-  `;
+  try {
+    const docResp = await client.getDocument({ db: DB_NAME, docId: service });
+    const codesDoc = docResp.result;
 
-  const rows = await db.all(query, [service]);
+    const usedCodes = codesDoc.codes.filter(c => c.used && c.txnId);
 
-  res.json({ transactions: rows });
+    // Aggregate by txnId
+    const txnMap = {};
+    usedCodes.forEach(c => {
+      if (!txnMap[c.txnId]) {
+        txnMap[c.txnId] = { txnId: c.txnId, date: c.usedAt, email: c.usedBy, qty: 0 };
+      }
+      txnMap[c.txnId].qty += 1;
+    });
+
+    const transactions = Object.values(txnMap).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    res.json({ transactions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch transactions" });
+  }
 });
 
 app.listen(3000, () => console.log("Server running on port 3000"));
