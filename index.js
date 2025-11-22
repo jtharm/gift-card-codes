@@ -497,7 +497,7 @@ app.post("/admin/reset-codes", requireAdmin, async (req, res) => {
   }
 });
 
-app.get("/admin/service-transactions", requireAdmin, async (req, res) => {
+app.get("/admin/transactions", requireAdmin, async (req, res) => {
   const { service } = req.query;
   if (!service || !["codes-uber", "codes-doordash"].includes(service)) {
     return res.status(400).json({ error: "Invalid service" });
