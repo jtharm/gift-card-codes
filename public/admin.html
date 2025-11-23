@@ -139,8 +139,8 @@ if (location.hostname === "gift-card-codes-develop.onrender.com") {
 <div id="content-codes" class="tab-content">
   <div class="section">
     <label>Select Service:</label>
-    <label><input type="radio" name="service" value="codes-uber">Uber</label>
-    <label><input type="radio" name="service" value="codes-doordash">DoorDash</label>
+    <label><input type="radio" name="service" value="Uber">Uber</label>
+    <label><input type="radio" name="service" value="DoorDash">DoorDash</label>
   </div>
 
   <div class="section">
@@ -277,11 +277,6 @@ document.getElementById("remove-user-btn").addEventListener("click", async () =>
 });
 
 // --- Code Management ---
-function getSelectedService() {
-  const radio = document.querySelector('input[name="service"]:checked');
-  return radio ? radio.value : null;
-}
-
 document.getElementById("inventory-btn").addEventListener("click", async () => {
   const serviceRadio = document.querySelector('input[name="service"]:checked');
   const status = document.getElementById("status-codes");
@@ -357,7 +352,8 @@ document.getElementById("reset-codes-btn").addEventListener("click", async () =>
 document.getElementById("txn-history-btn").addEventListener("click", async () => {
   const serviceRadio = document.querySelector('input[name="service"]:checked');
   if (!serviceRadio) return alert("Please select a service first.");
-  const serviceDocId = serviceRadio.value; // "codes-uber" or "codes-doordash"
+  const serviceDocId = `codes-${serviceRadio.value.toLowerCase()}`;
+
   await loadTransactions(serviceDocId);
 });
 
