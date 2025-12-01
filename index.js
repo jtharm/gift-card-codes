@@ -1,4 +1,4 @@
-require("dotenv").config();
+//require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
