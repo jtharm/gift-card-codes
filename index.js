@@ -1,11 +1,17 @@
-//require("dotenv").config();
-const express = require("express");
-const session = require("express-session");
-const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
-const { v4: uuidv4 } = require("uuid");
-const path = require("path");
-const axios = require("axios");
+import express from "express";
+import session from "express-session";
+import { CloudantV1, IamAuthenticator } from "@ibm-cloud/cloudant";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import axios from "axios";
+import { fileURLToPath } from "url";
+
+// ESM replacement for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -60,7 +66,7 @@ async function loadAuthorizedUsers() {
 
     return doc.result.emails || [];
   } catch (err) {
-    if (err.status === 404) return []; // No doc exists yet
+    if (err.status === 404) return [];
     console.error("Error loading authorized users:", err);
     throw err;
   }
@@ -68,7 +74,6 @@ async function loadAuthorizedUsers() {
 
 async function saveAuthorizedUsers(users) {
   try {
-    // First retrieve revision (_rev) so Cloudant allows update
     let doc;
     try {
       doc = await client.getDocument({
@@ -76,7 +81,6 @@ async function saveAuthorizedUsers(users) {
         docId: "authorized_users"
       });
 
-      // Update existing doc
       await client.putDocument({
         db: DB_NAME,
         docId: "authorized_users",
@@ -88,7 +92,6 @@ async function saveAuthorizedUsers(users) {
       });
     } catch (err) {
       if (err.status === 404) {
-        // Create new doc if not found
         await client.putDocument({
           db: DB_NAME,
           docId: "authorized_users",
@@ -132,7 +135,7 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
       <p><strong>Quantity:</strong> ${codes.length}</p>
       <p><strong>Codes:</strong><br><br>${codes.join("<br>")}</p>
       <p><strong>Total:</strong> $${total}</p>
-      <p>Please make e‑transfer payment to jeeva86@hotmail.com</p>
+      <p>Please make e-transfer payment to jeeva86@hotmail.com</p>
       <p>Regards,<br><br>Jeeva</p>
     `,
   };
@@ -158,7 +161,6 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
 // ROUTES
 // ----------------------
 
-// Login page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/login.html"));
 });
@@ -175,7 +177,6 @@ app.post("/admin/login", (req, res) => {
   return res.status(401).send("Invalid credentials");
 });
 
-// Handle login
 app.post("/login", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.send("Email required");
@@ -201,11 +202,8 @@ app.post("/login", async (req, res) => {
 
 app.post("/logout", (req, res) => {
   const email = req.session.email;
-  req.session.destroy(err => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Error logging out");
-    }
+  req.session.destroy((err) => {
+    if (err) return res.status(500).send("Error logging out");
     log(`User logged out: ${email}`);
     res.redirect("/");
   });
@@ -216,7 +214,6 @@ app.get("/session-info", (req, res) => {
   res.json({ email: req.session.email });
 });
 
-// Code request page
 app.get("/codes", (req, res) => {
   if (!req.session.email) return res.redirect("/");
   res.sendFile(path.join(__dirname, "public/codes.html"));
@@ -239,8 +236,8 @@ app.post("/retrieve-codes", async (req, res) => {
     for (const docId of services) {
       const docResp = await client.getDocument({ db: DB_NAME, docId });
       const codesDoc = docResp.result;
-      const matches = codesDoc.codes.filter(c => c.txnId === txnId && c.usedBy === email);
-      foundCodes = foundCodes.concat(matches.map(c => `${c.code} (${docId.replace('codes-', '')})`));
+      const matches = codesDoc.codes.filter((c) => c.txnId === txnId && c.usedBy === email);
+      foundCodes = foundCodes.concat(matches.map((c) => `${c.code} (${docId.replace("codes-", "")})`));
     }
 
     if (foundCodes.length === 0) {
@@ -255,7 +252,6 @@ app.post("/retrieve-codes", async (req, res) => {
     return res.status(500).json({ error: "Unknown error" });
   }
 });
-
 // Get codes
 app.post("/get-code", async (req, res) => {
   console.log("=== /get-code called ===");
