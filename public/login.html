@@ -100,7 +100,7 @@
     if (error) errorDiv.textContent = error;
     if (email) emailInput.value = email;
 
-    if (location.hostname === "gift-card-codes-develop.onrender.com") {
+    if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hostname === "gift-card-codes-develop.vercel.app") { 
       const banner = document.createElement("div");
       banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
 
