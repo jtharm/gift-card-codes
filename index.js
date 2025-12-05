@@ -211,7 +211,7 @@ app.post("/logout", (req, res) => {
 
 app.get("/config", (req, res) => {
   res.json({
-    etransferEmail: process.env.ADMIN_EMAIL
+    etransferEmail: ADMIN_EMAIL
   });
 });
 
