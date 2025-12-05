@@ -182,8 +182,8 @@ async function loadConfig() {
 }
   
 // Run both BEFORE page logic
-await loadUserEmail();
-await loadConfig();
+loadUserEmail();
+loadConfig();
 
 // Logout
 async function logout() {
