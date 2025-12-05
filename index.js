@@ -14,6 +14,7 @@ const app = express();
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NAME = process.env.ADMIN_NAME;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -135,8 +136,8 @@ async function sendPurchaseEmail(toEmail, txnId, service, codes, total) {
       <p><strong>Quantity:</strong> ${codes.length}</p>
       <p><strong>Codes:</strong><br><br>${codes.join("<br>")}</p>
       <p><strong>Total:</strong> $${total}</p>
-      <p>Please make e-transfer payment to jeeva86@hotmail.com</p>
-      <p>Regards,<br><br>Jeeva</p>
+      <p>Please make e-transfer payment to ${ADMIN_EMAIL}</p>
+      <p>Regards,<br><br>${ADMIN_NAME}</p>
     `,
   };
 
@@ -242,8 +243,8 @@ app.post("/retrieve-codes", async (req, res) => {
     for (const docId of services) {
       const docResp = await client.getDocument({ db: DB_NAME, docId });
       const codesDoc = docResp.result;
-      const matches = codesDoc.codes.filter((c) => c.txnId === txnId && c.usedBy === email);
-      foundCodes = foundCodes.concat(matches.map((c) => `${c.code} (${docId.replace("codes-", "")})`));
+      const matches = codesDoc.codes.filter(c => c.txnId === txnId && c.usedBy === email);
+      foundCodes = foundCodes.concat(matches.map(c => `${c.code} (${docId.replace('codes-', '')})`));
     }
 
     if (foundCodes.length === 0) {
