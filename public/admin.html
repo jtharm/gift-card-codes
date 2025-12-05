@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.0/dist/tesseract.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel</title>
@@ -149,30 +148,8 @@ if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hos
     <div id="inventory-output"></div>
   </div>
 
-  <!-- Live Scanner Modal -->
-  <div id="scanner-modal" style="
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.8); display:none;
-    justify-content:center; align-items:center; flex-direction:column;
-    z-index:9999;
-  ">
-    <video id="scanner-video" autoplay playsinline style="
-      width: 90%; max-width: 360px; border: 4px solid white;
-      border-radius: 12px;
-    "></video>
-
-    <button onclick="stopScanner()" style="
-      margin-top:20px; padding:12px 18px; background:red; color:white;
-      border:none; border-radius:8px; font-size:16px;
-    ">Stop</button>
-
-    <div id="scanner-status" style="color:white; margin-top:10px; font-size:18px;">
-      Scanning…
-    </div>
-  </div>
-
   <div class="section">
-    <button class="action-btn" onclick="startScanner()">📷 Live Scan Code</button>
+    <button class="action-btn" id="add-codes-btn">Add Codes</button>
   </div>
 
   <div class="section">
@@ -199,9 +176,6 @@ if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hos
 </div>
 
 <script>
-
-let scannerStream = null;
-let scanning = false;
 
 // --- Admin session ---
 async function loadAdmin() {
@@ -323,87 +297,6 @@ document.getElementById("inventory-btn").addEventListener("click", async () => {
     status.textContent = "Error fetching inventory";
   }
 });
-
-async function startScanner() {
-  const modal = document.getElementById("scanner-modal");
-  const video = document.getElementById("scanner-video");
-  const status = document.getElementById("scanner-status");
-
-  modal.style.display = "flex";
-  status.textContent = "Starting camera…";
-
-  try {
-    scannerStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: "environment" }, // rear camera
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      },
-      audio: false
-    });
-
-    video.srcObject = scannerStream;
-    scanning = true;
-
-    // Start OCR loop
-    scanLoop();
-  } catch (err) {
-    console.error(err);
-    status.textContent = "Camera access failed.";
-  }
-}
-
-async function scanLoop() {
-  if (!scanning) return;
-
-  const video = document.getElementById("scanner-video");
-  const status = document.getElementById("scanner-status");
-
-  // Capture frame from video
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  try {
-    const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
-
-    let cleaned = text
-      .replace(/\s+/g, "")
-      .replace(/[^A-Za-z0-9]/g, "")
-      .trim();
-
-    if (cleaned.length >= 10) { // assume gift card codes are 10+ chars
-      // Autofill into your textarea
-      const textarea = document.getElementById("new-codes");
-      textarea.value += cleaned + "\n";
-
-      status.textContent = "Detected: " + cleaned;
-
-      stopScanner();
-      return;
-    }
-
-    status.textContent = "Scanning…";
-  } catch (err) {
-    console.error("OCR error:", err);
-  }
-
-  // Scan again after 700ms
-  setTimeout(scanLoop, 700);
-}
-
-function stopScanner() {
-  scanning = false;
-
-  if (scannerStream) {
-    scannerStream.getTracks().forEach(t => t.stop());
-    scannerStream = null;
-  }
-
-  document.getElementById("scanner-modal").style.display = "none";
-}
 
 document.getElementById("add-codes-btn").addEventListener("click", async () => {
   const serviceRadio = document.querySelector('input[name="service"]:checked');
