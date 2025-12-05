@@ -91,7 +91,7 @@ document.getElementById("admin-login-form").addEventListener("submit", async (e)
 });
 
 // Show banner only when you're on the dev domain
-if (location.hostname === "gift-card-codes-develop.onrender.com") {
+if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hostname === "gift-card-codes-develop.vercel.app") {
   const banner = document.createElement("div");
   banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
 

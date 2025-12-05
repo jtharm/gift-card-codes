@@ -125,18 +125,6 @@
     <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
     <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
   </div>
-
-  <div id="captcha-box" class="section" style="display:none; text-align:center;">
-    <p id="captcha-question" style="font-weight:600;"></p>
-    <div id="captcha-grid" style="
-        display:grid;
-        grid-template-columns: repeat(3, 60px);
-        gap:10px;
-        justify-content:center;
-        margin-top:10px;
-    "></div>
-    <p id="captcha-error" style="color:red; display:none;">Try again.</p>
-  </div>
   
   <!-- Purchase codes -->
   <div id="purchase-section" class="section" style="display:none;">
@@ -159,12 +147,26 @@
     <button class="action-btn" id="retrieve-btn">Retrieve Codes</button>
     <div id="retrieved-codes"></div>
   </div>
+
+  <!-- Captcha Box -->
+  <div id="captcha-box" class="section" style="display:none; text-align:center;">
+    <p id="captcha-question" style="font-weight:600;"></p>
+    <div id="captcha-grid" style="
+        display:grid;
+        grid-template-columns: repeat(3, 60px);
+        gap:10px;
+        justify-content:center;
+        margin-top:10px;
+    "></div>
+    <p id="captcha-error" style="color:red; display:none;">Try again.</p>
+  </div>
 </div>
 
 <script>
 let USER_EMAIL = null;
 let currentMode = null;
-
+let etransferEmail = null;
+  
 // Load user session info
 async function loadUserEmail() {
   const res = await fetch("/session-info");
@@ -173,7 +175,16 @@ async function loadUserEmail() {
   USER_EMAIL = data.email;
   document.getElementById("userEmail").textContent = USER_EMAIL;
 }
+
+async function loadConfig() {
+  const res = await fetch('/config');
+  const cfg = await res.json();
+  etransferEmail = cfg.etransferEmail;
+}
+  
+// Run both BEFORE page logic
 loadUserEmail();
+loadConfig();
 
 // Logout
 async function logout() {
@@ -350,7 +361,7 @@ getCodesBtn.addEventListener("click", async () => {
       <p><strong>Transaction ID:</strong> ${data.txnId}</p>
       <p>Gift card codes have been sent from <a href="mailto:no-reply@test-nrw7gyme6xrg2k8e.mlsender.net">no-reply@test-nrw7gyme6xrg2k8e.mlsender.net</a> to ${USER_EMAIL}, may have gone into your junk mail folder.</p>
       <p><strong>Total due:</strong> $${data.total}</p>
-      <p>Please make e-transfer payment to <a href="mailto:jeeva86@hotmail.com"><strong>jeeva86@hotmail.com</strong></a>.</p>
+      <p>Please make e-transfer payment to <a href="mailto:${etransferEmail}"><strong>${etransferEmail}</strong></a>.</p>
     `;
   } catch (err) {
     console.error(err);
@@ -391,7 +402,7 @@ document.getElementById("retrieve-btn").addEventListener("click", async () => {
 });
 
 // Show banner only when you're on the dev domain
-if (location.hostname === "gift-card-codes-develop.onrender.com") {
+if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hostname === "gift-card-codes-develop.vercel.app") {
   const banner = document.createElement("div");
   banner.textContent = "⚠️ DEVELOPMENT VERSION — For testing only";
 
