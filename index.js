@@ -209,6 +209,12 @@ app.post("/logout", (req, res) => {
   });
 });
 
+app.get("/config", (req, res) => {
+  res.json({
+    etransferEmail: process.env.ADMIN_EMAIL
+  });
+});
+
 app.get("/session-info", (req, res) => {
   if (!req.session.email) return res.status(401).json({ error: "Unauthorized" });
   res.json({ email: req.session.email });
