@@ -125,18 +125,6 @@
     <label><input type="radio" name="mode" value="purchase"> Purchase New Codes</label>
     <label><input type="radio" name="mode" value="retrieve"> Retrieve Previously Purchased Codes</label>
   </div>
-
-  <div id="captcha-box" class="section" style="display:none; text-align:center;">
-    <p id="captcha-question" style="font-weight:600;"></p>
-    <div id="captcha-grid" style="
-        display:grid;
-        grid-template-columns: repeat(3, 60px);
-        gap:10px;
-        justify-content:center;
-        margin-top:10px;
-    "></div>
-    <p id="captcha-error" style="color:red; display:none;">Try again.</p>
-  </div>
   
   <!-- Purchase codes -->
   <div id="purchase-section" class="section" style="display:none;">
@@ -158,6 +146,19 @@
     </label>
     <button class="action-btn" id="retrieve-btn">Retrieve Codes</button>
     <div id="retrieved-codes"></div>
+  </div>
+
+  <!-- Captcha Box -->
+  <div id="captcha-box" class="section" style="display:none; text-align:center;">
+    <p id="captcha-question" style="font-weight:600;"></p>
+    <div id="captcha-grid" style="
+        display:grid;
+        grid-template-columns: repeat(3, 60px);
+        gap:10px;
+        justify-content:center;
+        margin-top:10px;
+    "></div>
+    <p id="captcha-error" style="color:red; display:none;">Try again.</p>
   </div>
 </div>
 
