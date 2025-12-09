@@ -103,17 +103,18 @@
     <h1>Login</h1>
 
     <form action="/login" method="POST" autocomplete="on">
-      <input type="password" autocomplete="new-password" style="position:absolute; left:-9999px; top:-9999px;">
 
       <input
         id="email"
         type="email"
-        name="email"
-        placeholder="Enter your email"
-        autocomplete="email"
+        name="username"
+        autocomplete="username"
         inputmode="email"
+        placeholder="Enter your email"
         required
       />
+
+      <input type="password" name="password" autocomplete="current-password" required>
 
       <button type="submit">Login</button>
     </form>
