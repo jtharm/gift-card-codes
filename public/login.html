@@ -103,16 +103,12 @@
     <h1>Login</h1>
 
     <form action="/login" method="POST" autocomplete="on">
-
-      <!-- Hidden password field: makes iOS reliably show email Autofill -->
-      <input type="password" autocomplete="current-password" style="display:none">
-
       <input
         id="email"
         type="email"
         name="email"
         placeholder="Enter your email"
-        autocomplete="email username"
+        autocomplete="username"
         inputmode="email"
         required
       />
