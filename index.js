@@ -186,7 +186,9 @@ app.post("/login", async (req, res) => {
     const authDoc = await client.getDocument({ db: DB_NAME, docId: "authorized_users" });
     const validEmails = authDoc.result.emails;
 
-    if (!validEmails.includes(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!validEmails.includes(normalizedEmail)) {
       log(`Unauthorized login attempt: ${email}`);
       return res.send("Not authorized");
     }
