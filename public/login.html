@@ -61,6 +61,28 @@
       text-align: center;
       font-size: 0.9rem;
     }
+
+    .feedback-footer {
+      position: fixed;
+      bottom: 8px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #666;
+      opacity: 0.85;
+      z-index: 9999;
+    }
+    
+    .feedback-footer a {
+      color: #666;
+      text-decoration: none;
+    }
+    
+    .feedback-footer a:hover {
+      text-decoration: underline;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -127,5 +149,10 @@
       topbar.style.marginTop = "45px";  // adjust if needed
     }
   </script>
+  
+  <div class="feedback-footer">
+    💬 Feedback or issues?  
+    <a href="https://github.com/jtharm/gift-card-codes/issues" target="_blank">Submit on GitHub</a>
+  </div>
 </body>
 </html>
