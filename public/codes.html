@@ -108,6 +108,39 @@
     button.action-btn { font-size: 15px; padding: 12px; }
     input[type="text"], select { font-size: 0.95rem; padding: 8px; }
   }
+
+  .feedback-footer {
+    position: fixed;
+    bottom: 8px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #666;
+    opacity: 0.85;
+    z-index: 9999;
+    padding: 3px 0;
+  }
+  
+  /* Desktop enhancements */
+  @media (min-width: 768px) {
+    .feedback-footer {
+      font-size: 0.85rem;
+      background: rgba(0,255,0,0.3);
+      padding: 6px 0;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      color: #555;
+    }
+  
+    .feedback-footer a {
+      color: #555;
+    }
+  
+    .feedback-footer a:hover {
+      color: #222;
+      text-decoration: underline;
+    }
+  }
 </style>
 </head>
 <body>
@@ -429,6 +462,9 @@ if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hos
   topbar.style.marginTop = "45px";  // adjust if needed
 }
 </script>
-
+  <div class="feedback-footer">
+    💬 Feedback or issues?  
+    <a href="https://github.com/jtharm/gift-card-codes/issues" target="_blank">Submit on GitHub</a>
+  </div>
 </body>
 </html>

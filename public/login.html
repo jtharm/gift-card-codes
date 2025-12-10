@@ -61,6 +61,39 @@
       text-align: center;
       font-size: 0.9rem;
     }
+
+    .feedback-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: white;   /* or whatever */
+      padding: 10px 0;
+      text-align: center;
+      z-index: 999;        /* make sure it stays on top */
+      border-top: 1px solid #ccc;
+    }
+    
+    /* Desktop enhancements */
+    @media (min-width: 768px) {
+      .feedback-footer {
+        font-size: 0.85rem;
+        background: rgba(0,255,0,0.3);
+        padding: 6px 0;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        color: #555;
+      }
+    
+      .feedback-footer a {
+        color: #555;
+      }
+    
+      .feedback-footer a:hover {
+        color: #222;
+        text-decoration: underline;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -69,10 +102,9 @@
     <h1>Login</h1>
 
     <form action="/login" method="POST" autocomplete="on">
-
       <!-- Hidden password field: makes iOS reliably show email Autofill -->
       <input type="password" autocomplete="current-password" style="display:none">
-
+      
       <input
         id="email"
         type="email"
@@ -127,5 +159,10 @@
       topbar.style.marginTop = "45px";  // adjust if needed
     }
   </script>
+  
+  <div class="feedback-footer">
+    💬 Feedback or issues?  
+    <a href="https://github.com/jtharm/gift-card-codes/issues" target="_blank">Submit on GitHub</a>
+  </div>
 </body>
 </html>
