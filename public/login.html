@@ -159,12 +159,13 @@
       topbar.style.marginTop = "45px";  // adjust if needed
     }
 
-  const RENDER_DOMAINS = [
-    "gift-card-codes.onrender.com",
-    "gift-card-codes-develop.onrender.com"
-  ];
+  console.log("checking domains");
 
-  if (RENDER_DOMAINS.includes(location.hostname)) {
+  console.log("hostname =", location.hostname);
+    
+   if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hostname === "gift-card-codes.onrender.com") { 
+    console.log("hostname matched");
+
     document.body.innerHTML = `
       <div style="
         position:fixed;
