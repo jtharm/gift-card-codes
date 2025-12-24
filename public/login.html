@@ -206,12 +206,46 @@
             Go to https://gift-card-codes.vercel.app/ →
           </a>
 
+          <div style="margin-top:12px;">
+            <button
+              id="copyLinkBtn"
+              style="
+                background:none;
+                border:none;
+                color:#555;
+                font-size:0.9rem;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+                gap:6px;
+                margin:0 auto;
+              "
+            >
+              📋 Copy link
+            </button>
+          </div>
+
           <p style="font-size:0.85rem;color:#888;margin-top:16px;">
             This page will be retired shortly.
           </p>
         </div>
       </div>
     `;
+     
+    const urlToCopy = "https://gift-card-codes.vercel.app/";
+    const copyBtn = document.getElementById("copyLinkBtn");
+    
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(urlToCopy);
+        copyBtn.textContent = "✅ Link copied";
+        setTimeout(() => {
+          copyBtn.textContent = "📋 Copy link";
+        }, 2000);
+      } catch (err) {
+        alert("Press and hold the link to copy");
+      }
+    });
   }
 </script>
   <div class="feedback-footer">
