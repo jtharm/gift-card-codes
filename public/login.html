@@ -152,14 +152,102 @@
       });
 
       // Insert BEFORE your topbar
-      const topbar = document.querySelector(".topbar");
-      document.body.insertBefore(banner, topbar);
+      //const topbar = document.querySelector(".topbar");
+      //document.body.insertBefore(banner, topbar);
 
       // Move the topbar down (not entire body)
-      topbar.style.marginTop = "45px";  // adjust if needed
+      //topbar.style.marginTop = "45px";  // adjust if needed
     }
-  </script>
-  
+
+  console.log("checking domains");
+
+  console.log("hostname =", location.hostname);
+    
+   if (location.hostname === "gift-card-codes-develop.onrender.com" || location.hostname === "gift-card-codes.onrender.com") { 
+    console.log("hostname matched");
+
+    document.body.innerHTML = `
+      <div style="
+        position:fixed;
+        inset:0;
+        background:#f5f5f5;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:999999;
+      ">
+        <div style="
+          background:white;
+          padding:30px 24px;
+          border-radius:14px;
+          box-shadow:0 10px 30px rgba(0,0,0,0.15);
+          text-align:center;
+          max-width:420px;
+          width:100%;
+        ">
+          <h2>We’ve moved!</h2>
+          <p style="color:#555;">
+            This site is no longer active.<br>
+            Please bookmark and continue on our new website.
+          </p>
+
+          <a href="https://gift-card-codes.vercel.app/"
+             style="
+               display:block;
+               width:100%;
+               padding:14px;
+               background:#007BFF;
+               color:white;
+               text-decoration:none;
+               border-radius:10px;
+               font-size:1.1rem;
+               font-weight:600;
+             ">
+            https://gift-card-codes.vercel.app/
+          </a>
+
+          <div style="margin-top:12px;">
+            <button
+              id="copyLinkBtn"
+              style="
+                background:none;
+                border:none;
+                color:#555;
+                font-size:0.9rem;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+                gap:6px;
+                margin:0 auto;
+              "
+            >
+              📋 Copy link
+            </button>
+          </div>
+
+          <p style="font-size:0.85rem;color:#888;margin-top:16px;">
+            This page will be retired shortly.
+          </p>
+        </div>
+      </div>
+    `;
+     
+    const urlToCopy = "https://gift-card-codes.vercel.app/";
+    const copyBtn = document.getElementById("copyLinkBtn");
+    
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(urlToCopy);
+        copyBtn.textContent = "✅ Link copied";
+        setTimeout(() => {
+          copyBtn.textContent = "📋 Copy link";
+        }, 2000);
+      } catch (err) {
+        alert("Press and hold the link to copy");
+      }
+    });
+  }
+</script>
   <div class="feedback-footer">
     💬 Feedback or issues?  
     <a href="https://github.com/jtharm/gift-card-codes/issues" target="_blank">Submit on GitHub</a>
