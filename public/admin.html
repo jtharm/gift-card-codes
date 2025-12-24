@@ -326,6 +326,7 @@ document.getElementById("add-codes-btn").addEventListener("click", async () => {
   } catch (err) { status.textContent = "Error adding codes"; }
 });
 
+  /* disable reset
 document.getElementById("reset-codes-btn").addEventListener("click", async () => {
   const serviceRadio = document.querySelector('input[name="service"]:checked');
   const status = document.getElementById("status-codes");
@@ -351,6 +352,7 @@ document.getElementById("reset-codes-btn").addEventListener("click", async () =>
     status.textContent = "Error resetting codes";
   }
 });
+*/
 
 document.getElementById("txn-history-btn").addEventListener("click", async () => {
   const serviceRadio = document.querySelector('input[name="service"]:checked');
